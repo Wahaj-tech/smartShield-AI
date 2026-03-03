@@ -79,6 +79,7 @@ enum class AppType {
     DISCORD,
     GITHUB,
     CLOUDFLARE,
+    CHATGPT,
     // Add more as needed
     APP_COUNT  // Keep this last for counting
 };
@@ -150,6 +151,10 @@ struct PacketJob {
     // Timestamps
     uint32_t ts_sec;
     uint32_t ts_usec;
+
+    // DPI classification (populated by FastPath)
+    std::string domain;              // SNI or HTTP Host
+    AppType app = AppType::UNKNOWN;  // Classified application
 };
 
 // ============================================================================

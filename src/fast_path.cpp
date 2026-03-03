@@ -98,9 +98,28 @@ PacketAction FastPathProcessor::processPacket(PacketJob& job) {
         return PacketAction::DROP;
     }
     
-    // If connection not yet classified, try to inspect payload
-    if (conn->state != ConnectionState::CLASSIFIED && job.payload_length > 0) {
+    // If connection not yet classified (or only weakly classified as DNS),
+    // try to inspect payload — TLS SNI / HTTP Host overrides DNS.
+    if ((conn->state != ConnectionState::CLASSIFIED ||
+         conn->app_type == AppType::DNS) &&
+        job.payload_length > 0) {
         inspectPayload(job, conn);
+    }
+    
+    // Propagate connection's classification to the job
+    job.domain = conn->sni;
+    job.app = conn->app_type;
+
+    // Track per-app stats (single FP thread, no lock needed)
+    if (job.app != AppType::UNKNOWN) {
+        app_packet_counts_[job.app]++;
+        app_byte_counts_[job.app] += job.data.size();
+    }
+
+    // Throttled console print: once per new classification
+    if (!conn->sni.empty() && conn->packets_in + conn->packets_out <= 2) {
+        std::cout << "[FP" << fp_id_ << "] App: " << appTypeToString(job.app)
+                  << " | Domain: " << job.domain << std::endl;
     }
     
     // Check rules (even for classified connections, as rules might change)
@@ -108,6 +127,11 @@ PacketAction FastPathProcessor::processPacket(PacketJob& job) {
 }
 
 void FastPathProcessor::inspectPayload(PacketJob& job, Connection* conn) {
+    if (job.tuple.protocol == 17 && 
+    (job.tuple.dst_port == 443 || job.tuple.src_port == 443)) {
+
+    std::cout << "QUIC traffic detected (UDP 443)\n";
+}
     if (job.payload_length == 0 || job.payload_offset >= job.data.size()) {
         return;
     }
@@ -201,15 +225,15 @@ PacketAction FastPathProcessor::checkRules(const PacketJob& job, Connection* con
         return PacketAction::FORWARD;
     }
     
-    // Parse source IP from tuple
-    uint32_t src_ip = job.tuple.src_ip;
+    // Use job.domain (may be richer than conn->sni for newly classified flows)
+    const std::string& domain = !job.domain.empty() ? job.domain : conn->sni;
     
     // Check blocking rules
     auto block_reason = rule_manager_->shouldBlock(
-        src_ip,
+        job.tuple.src_ip,
         job.tuple.dst_port,
         conn->app_type,
-        conn->sni
+        domain
     );
     
     if (block_reason) {
@@ -333,6 +357,26 @@ FPManager::AggregatedStats FPManager::getAggregatedStats() const {
     }
     
     return stats;
+}
+
+std::unordered_map<AppType, uint64_t> FPManager::getAppPacketCounts() const {
+    std::unordered_map<AppType, uint64_t> merged;
+    for (const auto& fp : fps_) {
+        for (const auto& [app, count] : fp->getAppPacketCounts()) {
+            merged[app] += count;
+        }
+    }
+    return merged;
+}
+
+std::unordered_map<AppType, uint64_t> FPManager::getAppByteCounts() const {
+    std::unordered_map<AppType, uint64_t> merged;
+    for (const auto& fp : fps_) {
+        for (const auto& [app, count] : fp->getAppByteCounts()) {
+            merged[app] += count;
+        }
+    }
+    return merged;
 }
 
 std::string FPManager::generateClassificationReport() const {

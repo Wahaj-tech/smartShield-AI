@@ -10,6 +10,8 @@
 #include <atomic>
 #include <memory>
 #include <functional>
+#include <unordered_map>
+#include <mutex>
 
 namespace DPI {
 
@@ -74,6 +76,10 @@ public:
     // Check if running
     bool isRunning() const { return running_; }
 
+    // Get per-app stats snapshot (read by FPManager for aggregation)
+    std::unordered_map<AppType, uint64_t> getAppPacketCounts() const { return app_packet_counts_; }
+    std::unordered_map<AppType, uint64_t> getAppByteCounts() const { return app_byte_counts_; }
+
 private:
     int fp_id_;
     
@@ -95,6 +101,10 @@ private:
     std::atomic<uint64_t> packets_dropped_{0};
     std::atomic<uint64_t> sni_extractions_{0};
     std::atomic<uint64_t> classification_hits_{0};
+
+    // Per-app statistics (only accessed from this FP's thread, no lock needed)
+    std::unordered_map<AppType, uint64_t> app_packet_counts_;
+    std::unordered_map<AppType, uint64_t> app_byte_counts_;
     
     // Thread control
     std::atomic<bool> running_{false};
@@ -170,6 +180,10 @@ public:
     };
     
     AggregatedStats getAggregatedStats() const;
+    
+    // Get per-app packet/byte counts aggregated across all FPs
+    std::unordered_map<AppType, uint64_t> getAppPacketCounts() const;
+    std::unordered_map<AppType, uint64_t> getAppByteCounts() const;
     
     // Generate classification report
     std::string generateClassificationReport() const;

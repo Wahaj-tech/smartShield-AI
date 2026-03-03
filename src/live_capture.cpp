@@ -165,9 +165,6 @@ void LiveCapture::packetHandler(u_char* userData,
     // Guard against malformed pcap header
     if (header->caplen == 0 || header->caplen > 65535) return;
 
-    std::cout << "[LiveCapture] packetHandler fired, caplen="
-              << header->caplen << std::endl;
-
     DPI::DPIEngine* engine = reinterpret_cast<DPI::DPIEngine*>(userData);
     engine->injectLivePacket(packet, header->caplen);
 }

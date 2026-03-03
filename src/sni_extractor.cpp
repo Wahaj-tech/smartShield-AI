@@ -52,8 +52,7 @@ std::optional<std::string> SNIExtractor::extract(const uint8_t* payload, size_t 
     
     // Skip handshake header
     // Byte 0: Handshake type (already checked)
-    // Bytes 1-3: Length
-    uint32_t handshake_length = readUint24BE(payload + offset + 1);
+    // Bytes 1-3: Length (skip past the 4-byte handshake header)
     offset += 4;
     
     // Client Hello body
@@ -129,6 +128,9 @@ std::optional<std::string> SNIExtractor::extract(const uint8_t* payload, size_t 
 std::vector<std::pair<uint16_t, std::string>> SNIExtractor::extractExtensions(
     const uint8_t* payload, size_t length) {
     
+    (void)payload;
+    (void)length;
+    
     std::vector<std::pair<uint16_t, std::string>> extensions;
     
     // Similar parsing logic as extract(), but collect all extensions
@@ -162,7 +164,6 @@ std::optional<std::string> HTTPHostExtractor::extract(const uint8_t* payload, si
     }
     
     // Search for "Host: " header
-    const char* host_header = "Host: ";
     const size_t host_header_len = 6;
     
     for (size_t i = 0; i + host_header_len < length; i++) {
