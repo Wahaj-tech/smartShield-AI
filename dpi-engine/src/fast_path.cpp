@@ -103,7 +103,19 @@ PacketAction FastPathProcessor::processPacket(PacketJob& job) {
     if ((conn->state != ConnectionState::CLASSIFIED ||
          conn->app_type == AppType::DNS) &&
         job.payload_length > 0) {
-        inspectPayload(job, conn);
+        if (inspectPayload(job, conn)) {
+            // DNS query for a blocked domain — propagate classification
+            // and log the detection before returning DROP
+            job.domain = conn->sni;
+            job.app    = conn->app_type;
+
+            if (!conn->sni.empty()) {
+                std::cout << "[FP" << fp_id_ << "] App: " << appTypeToString(job.app)
+                          << " | Domain: " << job.domain << std::endl;
+                std::cout << "[SmartShield] Rule matched: " << job.domain << std::endl;
+            }
+            return PacketAction::DROP;
+        }
     }
     
     // Propagate connection's classification to the job
@@ -126,34 +138,45 @@ PacketAction FastPathProcessor::processPacket(PacketJob& job) {
     return checkRules(job, conn);
 }
 
-void FastPathProcessor::inspectPayload(PacketJob& job, Connection* conn) {
+bool FastPathProcessor::inspectPayload(PacketJob& job, Connection* conn) {
     if (job.tuple.protocol == 17 && 
     (job.tuple.dst_port == 443 || job.tuple.src_port == 443)) {
 
     std::cout << "QUIC traffic detected (UDP 443)\n";
 }
     if (job.payload_length == 0 || job.payload_offset >= job.data.size()) {
-        return;
+        return false;
     }
     
     const uint8_t* payload = job.data.data() + job.payload_offset;
     
     // Try TLS SNI extraction first (most common for HTTPS)
     if (tryExtractSNI(job, conn)) {
-        return;
+        return false;
     }
     
     // Try HTTP Host header extraction
     if (tryExtractHTTPHost(job, conn)) {
-        return;
+        return false;
     }
     
     // Check for DNS (port 53)
     if (job.tuple.dst_port == 53 || job.tuple.src_port == 53) {
         auto domain = DNSExtractor::extractQuery(payload, job.payload_length);
         if (domain) {
+            // ── DNS-level blocking (Pi-hole style) ──
+            // Check if the queried domain is blocked BEFORE forwarding
+            // the DNS query.  Dropping the query means the browser never
+            // receives an IP address → the website cannot load.
+            if (rule_manager_ && rule_manager_->isDomainBlocked(*domain)) {
+                std::cout << "[DNS] BLOCKED query: " << *domain << std::endl;
+                conn_tracker_.classifyConnection(conn, AppType::DNS, *domain);
+                conn_tracker_.blockConnection(conn);
+                return true;  // signal DROP
+            }
+
             conn_tracker_.classifyConnection(conn, AppType::DNS, *domain);
-            return;
+            return false;
         }
     }
     
@@ -163,6 +186,7 @@ void FastPathProcessor::inspectPayload(PacketJob& job, Connection* conn) {
     } else if (job.tuple.dst_port == 443) {
         conn_tracker_.classifyConnection(conn, AppType::HTTPS, "");
     }
+    return false;
 }
 
 bool FastPathProcessor::tryExtractSNI(const PacketJob& job, Connection* conn) {
@@ -237,7 +261,9 @@ PacketAction FastPathProcessor::checkRules(const PacketJob& job, Connection* con
     );
     
     if (block_reason) {
-        // Log the block
+        // Log the block with SmartShield branding
+        std::cout << "[SmartShield] Rule matched: " << block_reason->detail << std::endl;
+
         std::ostringstream ss;
         ss << "[FP" << fp_id_ << "] BLOCKED packet: ";
         

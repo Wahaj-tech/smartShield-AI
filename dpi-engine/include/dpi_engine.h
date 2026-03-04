@@ -13,6 +13,7 @@
 #include <atomic>
 #include <fstream>
 #include <mutex>
+#include <functional>
 
 namespace DPI {
 
@@ -131,6 +132,15 @@ public:
     bool isRunning() const { return running_; }
 
     void injectLivePacket(const uint8_t* data, size_t length);
+    void injectLivePacket(const uint8_t* data, size_t length,
+                          uint32_t external_packet_id);
+
+    // Callback invoked (from any FP thread) for every packet after
+    // classification.  Used by NFQueueCapture to resolve pending verdicts.
+    using VerdictCallback = std::function<void(uint32_t packet_id,
+                                               const FiveTuple& tuple,
+                                               PacketAction action)>;
+    void setVerdictCallback(VerdictCallback cb);
 
 private:
     Config config_;
@@ -155,6 +165,9 @@ private:
     // Control
     std::atomic<bool> running_{false};
     std::atomic<bool> processing_complete_{false};
+
+    // Verdict notification (NFQUEUE integration)
+    VerdictCallback verdict_callback_;
     
     // Reader thread (separate for PCAP input)
     std::thread reader_thread_;

@@ -312,11 +312,19 @@ void DPIEngine::outputThreadFunc() {
 void DPIEngine::handleOutput(const PacketJob& job, PacketAction action) {
     if (action == PacketAction::DROP) {
         stats_.dropped_packets++;
-        return;
+    } else {
+        stats_.forwarded_packets++;
+        output_queue_.push(job);
     }
-    
-    stats_.forwarded_packets++;
-    output_queue_.push(job);
+
+    // Notify NFQueueCapture to resolve the pending verdict for this packet
+    if (verdict_callback_) {
+        verdict_callback_(job.packet_id, job.tuple, action);
+    }
+}
+
+void DPIEngine::setVerdictCallback(VerdictCallback cb) {
+    verdict_callback_ = std::move(cb);
 }
 
 bool DPIEngine::writeOutputHeader(const PacketAnalyzer::PcapGlobalHeader& header) {
@@ -501,6 +509,14 @@ void DPIEngine::printStatus() const {
 }
 
 void DPIEngine::injectLivePacket(const uint8_t* data, size_t length) {
+    // Auto-generate a packet_id when caller doesn't supply one
+    static std::atomic<uint32_t> auto_id{0x80000000};  // high bit to avoid collisions
+    injectLivePacket(data, length,
+                     auto_id.fetch_add(1, std::memory_order_relaxed));
+}
+
+void DPIEngine::injectLivePacket(const uint8_t* data, size_t length,
+                                  uint32_t external_packet_id) {
 
     // Check engine is still alive — use acquire ordering to see latest state
     if (!running_.load(std::memory_order_acquire)) return;
@@ -531,9 +547,7 @@ void DPIEngine::injectLivePacket(const uint8_t* data, size_t length) {
         return;
     }
 
-    static std::atomic<uint32_t> packet_id{0};
-
-    PacketJob job = createPacketJob(raw, parsed, packet_id.fetch_add(1, std::memory_order_relaxed));
+    PacketJob job = createPacketJob(raw, parsed, external_packet_id);
     if (job.data.empty()) return;
 
     // Nullify payload_data — it is a raw pointer into job.data's buffer and

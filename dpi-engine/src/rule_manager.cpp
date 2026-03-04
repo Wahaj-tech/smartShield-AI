@@ -151,17 +151,37 @@ bool RuleManager::domainMatchesPattern(const std::string& domain, const std::str
 
 bool RuleManager::isDomainBlocked(const std::string& domain) const {
     std::shared_lock<std::shared_mutex> lock(domain_mutex_);
-    
-    // Check exact match
-    if (blocked_domains_.count(domain) > 0) {
-        return true;
-    }
-    
-    // Check patterns
+
+    // Lowercase the queried domain once for all comparisons
     std::string lower_domain = domain;
     std::transform(lower_domain.begin(), lower_domain.end(), lower_domain.begin(),
                    [](unsigned char c) { return std::tolower(c); });
     
+    // Check exact match
+    if (blocked_domains_.count(lower_domain) > 0) {
+        return true;
+    }
+
+    // Suffix / subdomain matching:
+    //   Blocking "wikipedia.org" also matches "www.wikipedia.org",
+    //   "upload.wikimedia.org", etc.  We check whether the queried
+    //   domain ends with "." + blocked_domain.
+    for (const auto& blocked : blocked_domains_) {
+        std::string lower_blocked = blocked;
+        std::transform(lower_blocked.begin(), lower_blocked.end(), lower_blocked.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+
+        if (lower_domain.size() > lower_blocked.size()) {
+            // Check for ".blocked" suffix (e.g. "www.wikipedia.org" ends with ".wikipedia.org")
+            size_t offset = lower_domain.size() - lower_blocked.size();
+            if (lower_domain[offset - 1] == '.' &&
+                lower_domain.compare(offset, lower_blocked.size(), lower_blocked) == 0) {
+                return true;
+            }
+        }
+    }
+    
+    // Check wildcard patterns (e.g. *.facebook.com)
     for (const auto& pattern : domain_patterns_) {
         std::string lower_pattern = pattern;
         std::transform(lower_pattern.begin(), lower_pattern.end(), lower_pattern.begin(),

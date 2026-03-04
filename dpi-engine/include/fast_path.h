@@ -117,7 +117,8 @@ private:
     PacketAction processPacket(PacketJob& job);
     
     // Inspect packet payload for classification
-    void inspectPayload(PacketJob& job, Connection* conn);
+    // Returns true if the packet should be DROPPED (e.g. blocked DNS query)
+    bool inspectPayload(PacketJob& job, Connection* conn);
     
     // Extract SNI from TLS Client Hello
     bool tryExtractSNI(const PacketJob& job, Connection* conn);

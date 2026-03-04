@@ -24,18 +24,29 @@ set(DPI_COMMON_SOURCES
     src/sni_extractor.cpp
     src/types.cpp
     src/live_capture.cpp
+    src/control_interface.cpp
+    src/nfqueue_capture.cpp
 )
 
 # Header files location
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+# nlohmann/json (header-only) — fetched automatically if not already installed
+include(FetchContent)
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # Create the executable
 add_executable(packet_analyzer ${SOURCES})
 
-# DPI Live capture executable
+# DPI Live capture executable (NFQUEUE-based active firewall)
 add_executable(dpi_live src/main_live.cpp ${DPI_COMMON_SOURCES})
-target_link_libraries(dpi_live PRIVATE pcap pthread)
+target_link_libraries(dpi_live PRIVATE pcap pthread nlohmann_json::nlohmann_json netfilter_queue nfnetlink)
 
 # DPI file-based executable
 add_executable(dpi_engine_bin src/main_dpi.cpp ${DPI_COMMON_SOURCES})
-target_link_libraries(dpi_engine_bin PRIVATE pcap pthread)
+target_link_libraries(dpi_engine_bin PRIVATE pcap pthread nlohmann_json::nlohmann_json)

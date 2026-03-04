@@ -1,5 +1,6 @@
 #include "dpi_engine.h"
-#include "live_capture.h"
+#include "nfqueue_capture.h"
+#include "control_interface.h"
 #include <iostream>
 #include <csignal>
 #include <atomic>
@@ -29,36 +30,63 @@ int main() {
 
     engine.start();
 
-    // ---- Demo blocking rules (uncomment to test) ----
-    // engine.blockDomain("youtube.com");
-    // engine.blockDomain("*.youtube.com");
-    // engine.blockDomain("*.googlevideo.com");
-    // engine.blockApp(DPI::AppType::YOUTUBE);
+    // Start the control interface (TCP JSON on 127.0.0.1:9091)
+    DPI::ControlInterface control(engine);
+    control.start();
 
-    PacketAnalyzer::LiveCapture capture;
+    // ---- NFQUEUE-based active packet interception ----
+    // Requires:  sudo iptables -I OUTPUT -j NFQUEUE --queue-num 0
+    DPI::NFQueueCapture capture;
 
-    // Run capture in a separate thread so we can handle signals
-    std::thread capture_thread([&]() {
-        capture.start("wlo1", &engine);
-    });
+    // Wire up the verdict callback so that when FastPath finishes
+    // classifying a packet, NFQueueCapture can resolve the pending
+    // NFQUEUE verdict (NF_ACCEPT or NF_DROP).
+    engine.setVerdictCallback(
+        [&capture](uint32_t packet_id, const DPI::FiveTuple& tuple,
+                   DPI::PacketAction action) {
+            capture.resolveVerdict(packet_id, tuple, action);
+        });
 
-    // Wait for signal
-    while (g_running.load(std::memory_order_acquire)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    if (!capture.start(0, &engine)) {
+        std::cerr << "[main] Failed to start NFQUEUE capture.  "
+                     "Make sure you run as root and have the iptables rule:\n"
+                     "  sudo iptables -I OUTPUT -j NFQUEUE --queue-num 0\n";
+        control.stop();
+        engine.stop();
+        return 1;
     }
 
-    // Graceful shutdown
-    std::cout << "[main] Stopping capture...\n";
-    capture.stop();
+    // Wait for signal
+while (g_running.load(std::memory_order_acquire)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+}
 
-    if (capture_thread.joinable())
-        capture_thread.join();
+// Graceful shutdown
+std::cout << "[main] Stopping capture...\n";
 
-    engine.stop();
+// Stop NFQUEUE capture
+capture.stop();
 
-    // Print final report
-    std::cout << engine.generateReport();
-    std::cout << engine.generateClassificationReport();
+// Stop control interface
+control.stop();
 
-    return 0;
+// Stop DPI engine
+engine.stop();
+
+std::cout << "\n\n====================================\n";
+std::cout << "       SmartShield Session Report\n";
+std::cout << "====================================\n";
+
+// Print packet statistics
+std::cout << engine.generateReport() << std::endl;
+
+// Print application classification report
+std::cout << engine.generateClassificationReport() << std::endl;
+
+std::cout << "====================================\n";
+std::cout << "SmartShield shutdown complete\n";
+
+return 0;
+
+    
 }
