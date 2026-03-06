@@ -258,6 +258,138 @@ std::optional<std::string> DNSExtractor::extractQuery(const uint8_t* payload, si
 }
 
 // ============================================================================
+// DNS Response Parsing — extract domain + resolved IPv4 addresses
+// ============================================================================
+
+bool DNSExtractor::isDNSResponse(const uint8_t* payload, size_t length) {
+    if (length < 12) return false;
+
+    // QR bit (byte 2, bit 7) — 1 for response
+    uint8_t flags = payload[2];
+    if (!(flags & 0x80)) return false;  // not a response
+
+    // ANCOUNT > 0 (bytes 6-7)
+    uint16_t ancount = (static_cast<uint16_t>(payload[6]) << 8) | payload[7];
+    return ancount > 0;
+}
+
+// Helper: skip a DNS name (possibly compressed) and return new offset.
+// Returns 0 on error.
+static size_t skipDNSName(const uint8_t* payload, size_t length, size_t offset) {
+    size_t pos = offset;
+    bool jumped = false;
+    int safety = 0;
+
+    while (pos < length && safety++ < 128) {
+        uint8_t label_len = payload[pos];
+
+        if (label_len == 0) {
+            // end of name
+            if (!jumped) return pos + 1;
+            else return offset + 2;  // compression pointer is 2 bytes
+        }
+
+        if ((label_len & 0xC0) == 0xC0) {
+            // compression pointer — 2 bytes total
+            if (!jumped) offset = pos;
+            if (pos + 1 >= length) return 0;
+            uint16_t ptr = ((label_len & 0x3F) << 8) | payload[pos + 1];
+            pos = ptr;
+            jumped = true;
+            continue;
+        }
+
+        pos += 1 + label_len;
+    }
+
+    return 0;  // error
+}
+
+// Helper: read a DNS name (with compression) into a string.
+static std::string readDNSName(const uint8_t* payload, size_t length, size_t offset) {
+    std::string name;
+    size_t pos = offset;
+    int safety = 0;
+
+    while (pos < length && safety++ < 128) {
+        uint8_t label_len = payload[pos];
+
+        if (label_len == 0) break;
+
+        if ((label_len & 0xC0) == 0xC0) {
+            if (pos + 1 >= length) break;
+            uint16_t ptr = ((label_len & 0x3F) << 8) | payload[pos + 1];
+            pos = ptr;
+            continue;
+        }
+
+        pos++;
+        if (pos + label_len > length) break;
+
+        if (!name.empty()) name += '.';
+        name.append(reinterpret_cast<const char*>(payload + pos), label_len);
+        pos += label_len;
+    }
+
+    return name;
+}
+
+std::optional<DNSExtractor::DNSAnswer> DNSExtractor::extractResponse(
+        const uint8_t* payload, size_t length) {
+
+    if (!isDNSResponse(payload, length)) return std::nullopt;
+
+    uint16_t qdcount = (static_cast<uint16_t>(payload[4]) << 8) | payload[5];
+    uint16_t ancount = (static_cast<uint16_t>(payload[6]) << 8) | payload[7];
+
+    // Read the queried domain from the question section
+    size_t offset = 12;
+    std::string domain = readDNSName(payload, length, offset);
+
+    // Skip over all question entries
+    for (uint16_t i = 0; i < qdcount && offset < length; i++) {
+        offset = skipDNSName(payload, length, offset);
+        if (offset == 0 || offset + 4 > length) return std::nullopt;
+        offset += 4;  // QTYPE (2) + QCLASS (2)
+    }
+
+    // Parse answer RRs to find A records (type 1)
+    DNSAnswer answer;
+    answer.domain = domain;
+
+    for (uint16_t i = 0; i < ancount && offset < length; i++) {
+        // Skip name
+        size_t name_end = skipDNSName(payload, length, offset);
+        if (name_end == 0 || name_end + 10 > length) break;
+        offset = name_end;
+
+        uint16_t rtype  = (static_cast<uint16_t>(payload[offset]) << 8) | payload[offset + 1];
+        // uint16_t rclass = (static_cast<uint16_t>(payload[offset + 2]) << 8) | payload[offset + 3];
+        // uint32_t ttl    = ...;
+        uint16_t rdlength = (static_cast<uint16_t>(payload[offset + 8]) << 8) | payload[offset + 9];
+        offset += 10;
+
+        if (offset + rdlength > length) break;
+
+        if (rtype == 1 && rdlength == 4) {
+            // A record — 4-byte IPv4 address
+            // Store in host byte order (little-endian on x86) to match
+            // how FiveTuple stores IPs parsed via the DPI engine.
+            uint32_t ip = static_cast<uint32_t>(payload[offset])
+                        | (static_cast<uint32_t>(payload[offset + 1]) << 8)
+                        | (static_cast<uint32_t>(payload[offset + 2]) << 16)
+                        | (static_cast<uint32_t>(payload[offset + 3]) << 24);
+            answer.ips.push_back(ip);
+        }
+
+        offset += rdlength;
+    }
+
+    if (answer.domain.empty()) return std::nullopt;
+    return answer;
+}
+
+// ============================================================================
 // QUIC SNI Extractor (simplified)
 // ============================================================================
 

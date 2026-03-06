@@ -211,8 +211,10 @@ CMakeFiles/dpi_live.dir/src/nfqueue_capture.cpp.o: \
  /usr/include/c++/13/bits/stl_queue.h \
  /home/wahaj/SmartShield/dpi-engine/include/fast_path.h \
  /home/wahaj/SmartShield/dpi-engine/include/connection_tracker.h \
+ /home/wahaj/SmartShield/dpi-engine/include/flow_csv_writer.h \
  /home/wahaj/SmartShield/dpi-engine/include/rule_manager.h \
  /home/wahaj/SmartShield/dpi-engine/include/sni_extractor.h \
+ /home/wahaj/SmartShield/dpi-engine/include/dns_cache.h \
  /home/wahaj/SmartShield/dpi-engine/include/rule_manager.h \
  /usr/include/c++/13/iostream /usr/include/c++/13/cstring \
  /usr/include/string.h /usr/include/strings.h /usr/include/arpa/inet.h \
@@ -232,7 +234,16 @@ CMakeFiles/dpi_live.dir/src/nfqueue_capture.cpp.o: \
  /usr/include/x86_64-linux-gnu/asm/sockios.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
- /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/linux/netfilter.h \
+ /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/poll.h \
+ /usr/include/x86_64-linux-gnu/sys/poll.h \
+ /usr/include/x86_64-linux-gnu/bits/poll.h /usr/include/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
+ /usr/include/x86_64-linux-gnu/bits/environments.h \
+ /usr/include/x86_64-linux-gnu/bits/confname.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
+ /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
+ /usr/include/linux/close_range.h /usr/include/linux/netfilter.h \
  /usr/include/linux/types.h /usr/include/x86_64-linux-gnu/asm/types.h \
  /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
  /usr/include/linux/in.h /usr/include/linux/libc-compat.h \

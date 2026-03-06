@@ -7,6 +7,8 @@
 #include <cerrno>
 #include <chrono>
 #include <arpa/inet.h>
+#include <poll.h>
+#include <unistd.h>
 
 extern "C" {
 #include <linux/netfilter.h>
@@ -136,11 +138,30 @@ void NFQueueCapture::recvLoop() {
     // Buffer large enough for jumbo frames + netlink overhead
     alignas(16) char buf[65536 + 256];
 
-    while (running_.load()) {
-        int rv = ::recv(nfq_fd_, buf, sizeof(buf), 0);
-        if (rv < 0) {
+    struct pollfd pfd;
+    pfd.fd     = nfq_fd_;
+    pfd.events = POLLIN;
+
+    while (running_.load(std::memory_order_acquire)) {
+        // Use poll() with a 200ms timeout so we can check `running_`
+        // periodically and exit cleanly on CTRL+C.
+        int poll_ret = ::poll(&pfd, 1, 200);
+
+        if (poll_ret < 0) {
             if (errno == EINTR) continue;
-            if (!running_.load()) break;   // normal shutdown
+            if (!running_.load(std::memory_order_acquire)) break;
+            std::cerr << "[NFQUEUE] poll() error: " << std::strerror(errno) << "\n";
+            break;
+        }
+
+        if (poll_ret == 0) continue;  // timeout, check running_ again
+
+        if (!(pfd.revents & POLLIN)) continue;
+
+        int rv = ::recv(nfq_fd_, buf, sizeof(buf), MSG_DONTWAIT);
+        if (rv < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) continue;
+            if (!running_.load(std::memory_order_acquire)) break;
             std::cerr << "[NFQUEUE] recv() error: " << std::strerror(errno) << "\n";
             break;
         }

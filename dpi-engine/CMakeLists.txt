@@ -26,6 +26,7 @@ set(DPI_COMMON_SOURCES
     src/live_capture.cpp
     src/control_interface.cpp
     src/nfqueue_capture.cpp
+    src/flow_csv_writer.cpp
 )
 
 # Header files location
@@ -49,4 +50,4 @@ target_link_libraries(dpi_live PRIVATE pcap pthread nlohmann_json::nlohmann_json
 
 # DPI file-based executable
 add_executable(dpi_engine_bin src/main_dpi.cpp ${DPI_COMMON_SOURCES})
-target_link_libraries(dpi_engine_bin PRIVATE pcap pthread nlohmann_json::nlohmann_json)
+target_link_libraries(dpi_engine_bin PRIVATE pcap pthread nlohmann_json::nlohmann_json netfilter_queue nfnetlink)

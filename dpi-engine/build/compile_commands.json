@@ -97,6 +97,12 @@
 },
 {
   "directory": "/home/wahaj/SmartShield/dpi-engine/build",
+  "command": "/usr/bin/c++  -I/home/wahaj/SmartShield/dpi-engine/include -I/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-src/include -std=gnu++17 -o CMakeFiles/dpi_live.dir/src/flow_csv_writer.cpp.o -c /home/wahaj/SmartShield/dpi-engine/src/flow_csv_writer.cpp",
+  "file": "/home/wahaj/SmartShield/dpi-engine/src/flow_csv_writer.cpp",
+  "output": "CMakeFiles/dpi_live.dir/src/flow_csv_writer.cpp.o"
+},
+{
+  "directory": "/home/wahaj/SmartShield/dpi-engine/build",
   "command": "/usr/bin/c++  -I/home/wahaj/SmartShield/dpi-engine/include -I/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-src/include -std=gnu++17 -o CMakeFiles/dpi_engine_bin.dir/src/main_dpi.cpp.o -c /home/wahaj/SmartShield/dpi-engine/src/main_dpi.cpp",
   "file": "/home/wahaj/SmartShield/dpi-engine/src/main_dpi.cpp",
   "output": "CMakeFiles/dpi_engine_bin.dir/src/main_dpi.cpp.o"
@@ -172,5 +178,11 @@
   "command": "/usr/bin/c++  -I/home/wahaj/SmartShield/dpi-engine/include -I/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-src/include -std=gnu++17 -o CMakeFiles/dpi_engine_bin.dir/src/nfqueue_capture.cpp.o -c /home/wahaj/SmartShield/dpi-engine/src/nfqueue_capture.cpp",
   "file": "/home/wahaj/SmartShield/dpi-engine/src/nfqueue_capture.cpp",
   "output": "CMakeFiles/dpi_engine_bin.dir/src/nfqueue_capture.cpp.o"
+},
+{
+  "directory": "/home/wahaj/SmartShield/dpi-engine/build",
+  "command": "/usr/bin/c++  -I/home/wahaj/SmartShield/dpi-engine/include -I/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-src/include -std=gnu++17 -o CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.o -c /home/wahaj/SmartShield/dpi-engine/src/flow_csv_writer.cpp",
+  "file": "/home/wahaj/SmartShield/dpi-engine/src/flow_csv_writer.cpp",
+  "output": "CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.o"
 }
 ]

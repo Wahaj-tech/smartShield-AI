@@ -236,10 +236,12 @@ CMakeFiles/dpi_live.dir/src/live_capture.cpp.o: \
  /usr/include/c++/13/pstl/execution_defs.h \
  /home/wahaj/SmartShield/dpi-engine/include/fast_path.h \
  /home/wahaj/SmartShield/dpi-engine/include/connection_tracker.h \
+ /home/wahaj/SmartShield/dpi-engine/include/flow_csv_writer.h \
  /usr/include/c++/13/shared_mutex \
  /home/wahaj/SmartShield/dpi-engine/include/rule_manager.h \
  /usr/include/c++/13/unordered_set \
  /usr/include/c++/13/bits/unordered_set.h \
  /home/wahaj/SmartShield/dpi-engine/include/sni_extractor.h \
+ /home/wahaj/SmartShield/dpi-engine/include/dns_cache.h \
  /usr/include/c++/13/iostream /usr/include/c++/13/cstring \
  /usr/include/string.h /usr/include/strings.h

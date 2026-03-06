@@ -1,4 +1,5 @@
 #include "dpi_engine.h"
+#include "flow_csv_writer.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -62,6 +63,13 @@ bool DPIEngine::initialize() {
     }
     
     std::cout << "[DPIEngine] Initialized successfully\n";
+
+    // ── ML Dataset Logging ──
+    // Open the flow dataset CSV in the project root directory.
+    // The writer is a process-wide singleton; opening it here is safe even
+    // if multiple DPIEngine instances are created (only one file handle).
+    FlowCSVWriter::instance().open("flow_dataset.csv");
+
     return true;
 }
 
@@ -103,6 +111,21 @@ void DPIEngine::stop() {
     if (output_thread_.joinable()) {
         output_thread_.join();
     }
+
+    // Flush remaining flows to the ML dataset before tearing down trackers.
+    // Each FP's ConnectionTracker still has active connections that haven't
+    // timed out yet — force a cleanup with a 0-second timeout so every
+    // remaining flow fires the flow-finished callback.
+    if (fp_manager_) {
+        int total_fps = config_.num_load_balancers * config_.fps_per_lb;
+        for (int i = 0; i < total_fps; i++) {
+            fp_manager_->getFP(i).getConnectionTracker()
+                .cleanupStale(std::chrono::seconds(0));
+        }
+    }
+
+    // Close the ML dataset CSV writer
+    FlowCSVWriter::instance().close();
     
     std::cout << "[DPIEngine] All threads stopped\n";
 }

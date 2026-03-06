@@ -103,6 +103,18 @@ public:
     
     // Check if this is a DNS query (not response)
     static bool isDNSQuery(const uint8_t* payload, size_t length);
+
+    // Check if this is a DNS response
+    static bool isDNSResponse(const uint8_t* payload, size_t length);
+
+    // DNS response answer: domain + list of resolved IPv4 addresses
+    struct DNSAnswer {
+        std::string domain;
+        std::vector<uint32_t> ips;  // host-byte-order IPv4 addresses
+    };
+
+    // Extract domain and resolved IPs from a DNS response
+    static std::optional<DNSAnswer> extractResponse(const uint8_t* payload, size_t length);
 };
 
 } // namespace DPI

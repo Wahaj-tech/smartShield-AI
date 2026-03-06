@@ -2,6 +2,7 @@
 #define CONNECTION_TRACKER_H
 
 #include "types.h"
+#include "flow_csv_writer.h"
 #include <unordered_map>
 #include <shared_mutex>
 #include <vector>
@@ -23,6 +24,10 @@ namespace DPI {
 // - Maintain per-flow statistics
 // - Timeout inactive connections
 // ============================================================================
+
+// Callback invoked when a flow finishes (timeout / close / eviction).
+// Receives the Connection that is about to be removed.
+using FlowFinishedCallback = std::function<void(const Connection&)>;
 
 class ConnectionTracker {
 public:
@@ -73,6 +78,10 @@ public:
     // Iteration callback for all connections
     void forEach(std::function<void(const Connection&)> callback) const;
 
+    // Register a callback that fires when a flow is finished/removed.
+    // Used for ML dataset logging.
+    void setFlowFinishedCallback(FlowFinishedCallback cb);
+
 private:
     int fp_id_;
     size_t max_connections_;
@@ -87,8 +96,14 @@ private:
     size_t classified_count_ = 0;
     size_t blocked_count_ = 0;
     
+    // Callback fired when a flow is removed
+    FlowFinishedCallback flow_finished_cb_;
+
     // For LRU eviction if table gets full
     void evictOldest();
+
+    // Notify flow finished (calls callback if set)
+    void notifyFlowFinished(const Connection& conn);
 };
 
 // ============================================================================

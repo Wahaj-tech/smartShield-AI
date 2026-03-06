@@ -263,6 +263,33 @@ src/fast_path.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_engine_bin.dir/build.make CMakeFiles/dpi_engine_bin.dir/src/fast_path.cpp.s
 .PHONY : src/fast_path.cpp.s
 
+src/flow_csv_writer.o: src/flow_csv_writer.cpp.o
+.PHONY : src/flow_csv_writer.o
+
+# target to build an object file
+src/flow_csv_writer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_live.dir/build.make CMakeFiles/dpi_live.dir/src/flow_csv_writer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_engine_bin.dir/build.make CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.o
+.PHONY : src/flow_csv_writer.cpp.o
+
+src/flow_csv_writer.i: src/flow_csv_writer.cpp.i
+.PHONY : src/flow_csv_writer.i
+
+# target to preprocess a source file
+src/flow_csv_writer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_live.dir/build.make CMakeFiles/dpi_live.dir/src/flow_csv_writer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_engine_bin.dir/build.make CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.i
+.PHONY : src/flow_csv_writer.cpp.i
+
+src/flow_csv_writer.s: src/flow_csv_writer.cpp.s
+.PHONY : src/flow_csv_writer.s
+
+# target to generate assembly for a file
+src/flow_csv_writer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_live.dir/build.make CMakeFiles/dpi_live.dir/src/flow_csv_writer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dpi_engine_bin.dir/build.make CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.s
+.PHONY : src/flow_csv_writer.cpp.s
+
 src/live_capture.o: src/live_capture.cpp.o
 .PHONY : src/live_capture.o
 
@@ -580,6 +607,9 @@ help:
 	@echo "... src/fast_path.o"
 	@echo "... src/fast_path.i"
 	@echo "... src/fast_path.s"
+	@echo "... src/flow_csv_writer.o"
+	@echo "... src/flow_csv_writer.i"
+	@echo "... src/flow_csv_writer.s"
 	@echo "... src/live_capture.o"
 	@echo "... src/live_capture.i"
 	@echo "... src/live_capture.s"

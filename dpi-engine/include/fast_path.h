@@ -6,6 +6,7 @@
 #include "connection_tracker.h"
 #include "rule_manager.h"
 #include "sni_extractor.h"
+#include "dns_cache.h"
 #include <thread>
 #include <atomic>
 #include <memory>
@@ -105,6 +106,9 @@ private:
     // Per-app statistics (only accessed from this FP's thread, no lock needed)
     std::unordered_map<AppType, uint64_t> app_packet_counts_;
     std::unordered_map<AppType, uint64_t> app_byte_counts_;
+
+    // DNS IP→domain cache (populated from DNS responses)
+    DNSCache dns_cache_;
     
     // Thread control
     std::atomic<bool> running_{false};

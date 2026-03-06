@@ -68,6 +68,14 @@ void ConnectionTracker::updateConnection(Connection* conn, size_t packet_size, b
     }
 }
 
+// Helper: returns true if the AppType is a generic protocol type
+// (i.e. not a meaningful application classification).
+static bool isGenericProtocolType(AppType t) {
+    return t == AppType::UNKNOWN || t == AppType::HTTP ||
+           t == AppType::HTTPS  || t == AppType::TLS  ||
+           t == AppType::QUIC   || t == AppType::DNS;
+}
+
 void ConnectionTracker::classifyConnection(Connection* conn, AppType app, const std::string& sni) {
     if (!conn) return;
     
@@ -76,6 +84,22 @@ void ConnectionTracker::classifyConnection(Connection* conn, AppType app, const 
         conn->sni = sni;
         conn->state = ConnectionState::CLASSIFIED;
         classified_count_++;
+    } else {
+        // Allow upgrading app_type when the existing classification is
+        // a generic protocol type (HTTP/HTTPS/TLS/DNS) and the new one
+        // is more specific (e.g. SOCIAL_MEDIA from SNI extraction).
+        // This fixes the case where port-based fallback classifies as
+        // HTTPS before the TLS Client Hello with SNI arrives.
+        if (isGenericProtocolType(conn->app_type) && !isGenericProtocolType(app)) {
+            conn->app_type = app;
+        }
+        // Always upgrade sni/domain if they were empty
+        if (!sni.empty() && conn->sni.empty()) {
+            conn->sni = sni;
+        }
+        if (!sni.empty() && conn->domain.empty()) {
+            conn->domain = sni;
+        }
     }
 }
 
@@ -103,6 +127,7 @@ size_t ConnectionTracker::cleanupStale(std::chrono::seconds timeout) {
             now - it->second.last_seen);
         
         if (age > timeout || it->second.state == ConnectionState::CLOSED) {
+            notifyFlowFinished(it->second);
             it = connections_.erase(it);
             removed++;
         } else {
@@ -158,7 +183,22 @@ void ConnectionTracker::evictOldest() {
         }
     }
     
+    notifyFlowFinished(oldest->second);
     connections_.erase(oldest);
+}
+
+void ConnectionTracker::setFlowFinishedCallback(FlowFinishedCallback cb) {
+    flow_finished_cb_ = std::move(cb);
+}
+
+void ConnectionTracker::notifyFlowFinished(const Connection& conn) {
+    if (!flow_finished_cb_) return;
+
+    // Only log flows that carried at least 1 packet (skip empty entries)
+    uint64_t total_pkts = conn.packets_in + conn.packets_out;
+    if (total_pkts == 0) return;
+
+    flow_finished_cb_(conn);
 }
 
 // ============================================================================

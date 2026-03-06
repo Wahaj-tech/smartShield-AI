@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/dpi_engine_bin.dir/src/dpi_engine.cpp.o.d"
   "CMakeFiles/dpi_engine_bin.dir/src/fast_path.cpp.o"
   "CMakeFiles/dpi_engine_bin.dir/src/fast_path.cpp.o.d"
+  "CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.o"
+  "CMakeFiles/dpi_engine_bin.dir/src/flow_csv_writer.cpp.o.d"
   "CMakeFiles/dpi_engine_bin.dir/src/live_capture.cpp.o"
   "CMakeFiles/dpi_engine_bin.dir/src/live_capture.cpp.o.d"
   "CMakeFiles/dpi_engine_bin.dir/src/load_balancer.cpp.o"

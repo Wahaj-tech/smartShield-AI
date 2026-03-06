@@ -80,12 +80,27 @@ enum class AppType {
     GITHUB,
     CLOUDFLARE,
     CHATGPT,
+    // Category-based classifications
+    AI_TOOL,            // AI cheating tools (ChatGPT, Copilot, Perplexity, etc.)
+    WRITING_ASSISTANT,  // Grammar/writing assistants (Grammarly, QuillBot, etc.)
+    SOCIAL_MEDIA,       // Social media platforms
+    MESSAGING,          // Messaging applications
+    STREAMING,          // Video/audio streaming
+    ADULT,              // Adult content websites
+    SEARCH,             // Search engines (Google, Bing, DuckDuckGo)
+    PRODUCTIVITY,       // Productivity tools (Microsoft Office, Azure, Outlook)
     // Add more as needed
     APP_COUNT  // Keep this last for counting
 };
 
 std::string appTypeToString(AppType type);
 AppType sniToAppType(const std::string& sni);
+
+// Domain normalization: strips CDN/infrastructure prefixes and extracts root domain
+std::string normalizeDomain(const std::string& domain);
+
+// Category string from AppType (for ML dataset)
+std::string appTypeToCategory(AppType type);
 
 // ============================================================================
 // Connection State
@@ -115,7 +130,8 @@ struct Connection {
     FiveTuple tuple;
     ConnectionState state = ConnectionState::NEW;
     AppType app_type = AppType::UNKNOWN;
-    std::string sni;  // Server Name Indication (if detected)
+    std::string sni;     // Server Name Indication (if detected)
+    std::string domain;  // DNS / HTTP domain (if detected)
     
     uint64_t packets_in = 0;
     uint64_t packets_out = 0;
