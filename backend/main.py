@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import rules, stats, domains, flows
+from routes import rules, stats, domains, mode, flows
 from websocket_manager import manager as ws_manager
 from utils.logger import get_logger
 
@@ -53,6 +53,7 @@ app.add_middleware(
 app.include_router(rules.router)
 app.include_router(stats.router)
 app.include_router(domains.router)
+app.include_router(mode.router)
 app.include_router(flows.router)
 
 

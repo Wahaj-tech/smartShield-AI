@@ -15,6 +15,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 import config
 from dpi_client import DPIConnectionError, send_command
+from services import mode_service
 from utils.logger import get_logger
 
 log = get_logger("websocket_manager")
@@ -80,6 +81,17 @@ class WebSocketManager:
                     "domain_list": stats.get("domain_list", []),
                     "app_list": stats.get("app_list", []),
                 }
+
+                # Include current mode info in broadcast
+                try:
+                    mode_info = await asyncio.to_thread(mode_service.get_mode)
+                    payload["mode"] = mode_info.get("mode", "free")
+                    payload["blocked_categories"] = mode_info.get(
+                        "blocked_categories", []
+                    )
+                except Exception:
+                    payload["mode"] = "free"
+                    payload["blocked_categories"] = []
 
                 if self._connections:
                     await self.broadcast(payload)
