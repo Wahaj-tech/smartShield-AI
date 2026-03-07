@@ -113,6 +113,7 @@ private:
     // Stats (atomic, lock-free)
     std::atomic<uint64_t> pkts_accepted_{0};
     std::atomic<uint64_t> pkts_dropped_{0};
+    std::atomic<uint64_t> enobufs_count_{0};
 };
 
 } // namespace DPI

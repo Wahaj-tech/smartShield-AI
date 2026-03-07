@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/wahaj/SmartShield/dpi-engine/include -I/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-src/include
 
-CXX_FLAGS = -std=gnu++17
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17
 

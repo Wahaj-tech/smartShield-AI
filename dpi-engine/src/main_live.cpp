@@ -20,7 +20,7 @@ int main() {
     std::signal(SIGTERM, signalHandler);
 
     DPI::DPIEngine::Config config;
-    config.num_load_balancers = 2;
+    config.num_load_balancers = 4;
     config.fps_per_lb = 2;
 
     DPI::DPIEngine engine(config);

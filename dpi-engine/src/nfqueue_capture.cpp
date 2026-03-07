@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <poll.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 
 extern "C" {
 #include <linux/netfilter.h>
@@ -85,10 +87,24 @@ bool NFQueueCapture::start(uint16_t queue_num, DPIEngine* engine) {
         return false;
     }
 
-    // Optional: increase kernel queue length to reduce drops under load
-    nfq_set_queue_maxlen(nfq_qh_, 8192);
+    // Increase kernel queue length to reduce drops under load
+    nfq_set_queue_maxlen(nfq_qh_, 16384);
+
+    // Enable fail-open: if queue is full, ACCEPT packets instead of dropping
+    // NFQA_CFG_F_FAIL_OPEN = 0x0001
+    nfq_set_queue_flags(nfq_qh_, (1 << 0), (1 << 0));
 
     nfq_fd_ = nfq_fd(nfq_h_);
+
+    // --- 4. Enlarge kernel socket receive buffer (4 MB) ---
+    int bufsize = 4 * 1024 * 1024;
+    setsockopt(nfq_fd_, SOL_SOCKET, SO_RCVBUFFORCE, &bufsize, sizeof(bufsize));
+
+    // --- 5. Tell kernel NOT to send ENOBUFS when queue overflows ---
+    // This prevents the recv() from failing with "No buffer space available".
+    // Packets will be silently dropped instead, which is the safe behavior.
+    int opt = 1;
+    setsockopt(nfq_fd_, SOL_NETLINK, NETLINK_NO_ENOBUFS, &opt, sizeof(opt));
 
     running_.store(true);
     capture_thread_ = std::thread(&NFQueueCapture::recvLoop, this);
@@ -127,6 +143,7 @@ void NFQueueCapture::stop() {
     std::cout << "[NFQUEUE] Capture stopped (accepted="
               << pkts_accepted_.load()
               << ", dropped=" << pkts_dropped_.load()
+              << ", enobufs=" << enobufs_count_.load()
               << ")\n";
 }
 
@@ -161,6 +178,11 @@ void NFQueueCapture::recvLoop() {
         int rv = ::recv(nfq_fd_, buf, sizeof(buf), MSG_DONTWAIT);
         if (rv < 0) {
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) continue;
+            // ENOBUFS = kernel buffer overflow — transient, just retry
+            if (errno == ENOBUFS) {
+                enobufs_count_.fetch_add(1, std::memory_order_relaxed);
+                continue;
+            }
             if (!running_.load(std::memory_order_acquire)) break;
             std::cerr << "[NFQUEUE] recv() error: " << std::strerror(errno) << "\n";
             break;
