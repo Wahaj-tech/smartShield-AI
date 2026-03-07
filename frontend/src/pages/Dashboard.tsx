@@ -1,11 +1,14 @@
 import { useCallback } from 'react';
 import DashboardHeader from '../components/DashboardHeader';
+import ModeSelector from '../components/ModeSelector';
 import ControlBar from '../components/ControlBar';
 import StatsCards from '../components/StatsCards';
 import CategoryChart from '../components/CategoryChart';
 import TrafficChart from '../components/TrafficChart';
 import AIDetectionPanel from '../components/AIDetectionPanel';
 import AlertsPanel from '../components/AlertsPanel';
+import BlockedSites from '../components/BlockedSites';
+import LiveFlowStream from '../components/LiveFlowStream';
 import { useSocket } from '../hooks/useSocket';
 import { socketService } from '../services/socketService';
 
@@ -19,6 +22,13 @@ export default function Dashboard() {
     setSearchQuery,
     categoryFilter,
     setCategoryFilter,
+    mode,
+    setMode,
+    blockedCategories,
+    blockedSites,
+    blockSite,
+    unblockSite,
+    liveFlows,
   } = useSocket();
 
   const handleExport = useCallback(() => {
@@ -46,7 +56,10 @@ export default function Dashboard() {
       {/* 1. Header */}
       <DashboardHeader connected={connected} />
 
-      {/* 2. Control Bar */}
+      {/* 2. Mode Selector */}
+      <ModeSelector mode={mode} onModeChange={setMode} blockedCategories={blockedCategories} />
+
+      {/* 3. Control Bar */}
       <ControlBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -71,11 +84,17 @@ export default function Dashboard() {
         <TrafficChart timeline={stats.timeline} />
       </div>
 
-      {/* 6 & 7. Detection & Alerts row */}
+      {/* Live Flow Stream */}
+      <LiveFlowStream flows={liveFlows} connected={connected} />
+
+      {/* Blocked Sites + Detection & Alerts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BlockedSites sites={blockedSites} onBlock={blockSite} onUnblock={unblockSite} />
         <AIDetectionPanel detections={filteredDetections} />
-        <AlertsPanel threats={filteredThreats} totalBlocked={stats.blocked} />
       </div>
+
+      {/* Alerts */}
+      <AlertsPanel threats={filteredThreats} totalBlocked={stats.blocked} />
 
       {/* Footer */}
       <footer className="text-center text-xs text-slate-muted py-4">

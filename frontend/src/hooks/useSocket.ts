@@ -10,7 +10,11 @@ import type {
   TimelinePoint,
   CategoryStats,
   ThreatAlert,
+  FilterMode,
 } from '../types';
+import type { BlockedSite } from '../components/BlockedSites';
+import type { LiveFlow } from '../components/LiveFlowStream';
+import { flowToLiveEntry } from '../components/LiveFlowStream';
 
 const FLOW_POLL_MS = 3000;
 const TIMELINE_MAX = 30; // data points kept
@@ -23,6 +27,10 @@ const EMPTY_CATEGORIES: CategoryStats = {
   streaming: 0,
   search: 0,
   development: 0,
+  ecommerce: 0,
+  productivity: 0,
+  cloud_cdn: 0,
+  adult: 0,
   other: 0,
 };
 
@@ -99,6 +107,10 @@ export function useSocket() {
   const [paused, setPaused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [mode, setModeState] = useState<FilterMode>('free');
+  const [blockedCategories, setBlockedCategories] = useState<string[]>([]);
+  const [blockedSites, setBlockedSites] = useState<BlockedSite[]>([]);
+  const [liveFlows, setLiveFlows] = useState<LiveFlow[]>([]);
   const timelineRef = useRef<TimelinePoint[]>([]);
   const flowsRef = useRef<FlowRecord[]>([]);
   const pausedRef = useRef(false);
@@ -115,6 +127,18 @@ export function useSocket() {
       if (flows && flows.length > 0) {
         flowsRef.current = flows;
         const newStats = buildStatsFromFlows(flows);
+
+        // Build live flow stream (latest 30 unique-domain flows)
+        const seen = new Set<string>();
+        const latest: FlowRecord[] = [];
+        for (let i = flows.length - 1; i >= 0 && latest.length < 30; i--) {
+          const key = flows[i].domain + '-' + flows[i].packet_count;
+          if (!seen.has(key)) {
+            seen.add(key);
+            latest.push(flows[i]);
+          }
+        }
+        setLiveFlows(latest.map((f, i) => flowToLiveEntry(f, i)));
 
         // Add timeline point
         const now = new Date();
@@ -144,9 +168,35 @@ export function useSocket() {
     // Connect WebSocket
     socketService.connect();
 
+    // Fetch initial mode
+    socketService.getMode().then((info) => {
+      setModeState(info.mode);
+      setBlockedCategories(info.blocked_categories);
+    });
+
+    // Fetch persisted blocked domains
+    socketService.fetchBlockedDomains().then((domains) => {
+      setBlockedSites(
+        domains.map((d) => ({
+          domain: d.domain,
+          reason: d.reason || 'Blocked',
+          blockedAt: new Date().toISOString(),
+          auto: d.auto || false,
+        })),
+      );
+    });
+
     const unsub = socketService.subscribe((data) => {
       if (pausedRef.current) return;
       setConnected(true);
+
+      // Handle mode from WS payload
+      if (data.mode) {
+        setModeState(data.mode as FilterMode);
+      }
+      if (Array.isArray(data.blocked_categories)) {
+        setBlockedCategories(data.blocked_categories as string[]);
+      }
 
       // Handle WS payload from backend (blocked stats)
       setStats((prev) => ({
@@ -175,6 +225,57 @@ export function useSocket() {
     };
   }, [pollFlows]);
 
+  const setMode = useCallback(async (newMode: FilterMode) => {
+    const info = await socketService.setMode(newMode);
+    setModeState(info.mode);
+    setBlockedCategories(info.blocked_categories);
+
+    // Refresh blocked sites from the response (includes auto-blocked)
+    if (info.blocked_domains && Array.isArray(info.blocked_domains)) {
+      setBlockedSites(
+        info.blocked_domains.map((d) => ({
+          domain: d.domain,
+          reason: d.reason || 'Blocked',
+          blockedAt: new Date().toISOString(),
+          auto: d.auto || false,
+        })),
+      );
+    } else {
+      // Fallback: fetch from API
+      socketService.fetchBlockedDomains().then((domains) => {
+        setBlockedSites(
+          domains.map((d) => ({
+            domain: d.domain,
+            reason: d.reason || 'Blocked',
+            blockedAt: new Date().toISOString(),
+            auto: d.auto || false,
+          })),
+        );
+      });
+    }
+  }, []);
+
+  const blockSite = useCallback(async (domain: string, reason: string) => {
+    try {
+      await socketService.blockDomain(domain, reason);
+      setBlockedSites((prev) => {
+        if (prev.some((s) => s.domain === domain)) return prev;
+        return [...prev, { domain, reason, blockedAt: new Date().toISOString() }];
+      });
+    } catch (err) {
+      console.error('[SmartShield] Failed to block domain:', err);
+    }
+  }, []);
+
+  const unblockSite = useCallback(async (domain: string) => {
+    try {
+      await socketService.unblockDomain(domain);
+      setBlockedSites((prev) => prev.filter((s) => s.domain !== domain));
+    } catch (err) {
+      console.error('[SmartShield] Failed to unblock domain:', err);
+    }
+  }, []);
+
   return {
     stats,
     connected,
@@ -184,5 +285,12 @@ export function useSocket() {
     setSearchQuery,
     categoryFilter,
     setCategoryFilter,
+    mode,
+    setMode,
+    blockedCategories,
+    blockedSites,
+    blockSite,
+    unblockSite,
+    liveFlows,
   };
 }

@@ -19,6 +19,10 @@ export function categoryLabel(cat: string): string {
     streaming: 'Streaming',
     search: 'Search',
     development: 'Development',
+    ecommerce: 'E-Commerce',
+    productivity: 'Productivity',
+    cloud_cdn: 'Cloud / CDN',
+    adult: 'Adult',
     other: 'Other',
   };
   return labels[cat] ?? cat;
@@ -36,6 +40,10 @@ export function categoryColor(cat: string): string {
     streaming: '#06B6D4',
     search: '#6366F1',
     development: '#3B82F6',
+    ecommerce: '#F97316',
+    productivity: '#14B8A6',
+    cloud_cdn: '#94A3B8',
+    adult: '#DC2626',
     other: '#64748B',
   };
   return colors[cat] ?? '#64748B';

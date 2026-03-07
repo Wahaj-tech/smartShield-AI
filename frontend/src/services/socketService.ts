@@ -2,7 +2,7 @@
 // The backend uses a native WebSocket at /ws (not Socket.IO).
 // We also parse flow_dataset.csv periodically for rich dashboard data.
 
-import type { FlowRecord, FlowCategory } from '../types';
+import type { FlowRecord, FlowCategory, ModeInfo, FilterMode } from '../types';
 
 const WS_URL =
   import.meta.env.VITE_WS_URL ??
@@ -91,6 +91,75 @@ class SocketService {
 
   getExportURL() {
     return `${API_BASE}/api/flows/export`;
+  }
+
+  // ── Mode API ─────────────────────────────────────────────────────
+
+  async getMode(): Promise<ModeInfo> {
+    try {
+      const res = await fetch(`${API_BASE}/mode`);
+      if (!res.ok) return { mode: 'free', blocked_categories: [] };
+      return res.json();
+    } catch {
+      return { mode: 'free', blocked_categories: [] };
+    }
+  }
+
+  async setMode(mode: FilterMode): Promise<ModeInfo & { blocked_domains?: { domain: string; reason: string; auto: boolean }[] }> {
+    try {
+      const res = await fetch(`${API_BASE}/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      if (!res.ok) return { mode: 'free', blocked_categories: [] };
+      return res.json();
+    } catch {
+      return { mode: 'free', blocked_categories: [] };
+    }
+  }
+
+  // ── Block / Unblock domain ───────────────────────────────────────
+
+  async blockDomain(domain: string, reason: string = ''): Promise<{ status: string }> {
+    const res = await fetch(`${API_BASE}/block/domain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain, reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Block failed' }));
+      throw new Error(err.detail || 'Block failed');
+    }
+    return res.json();
+  }
+
+  async unblockDomain(domain: string): Promise<{ status: string }> {
+    const res = await fetch(`${API_BASE}/unblock/domain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Unblock failed' }));
+      throw new Error(err.detail || 'Unblock failed');
+    }
+    return res.json();
+  }
+
+  async fetchBlockedDomains(): Promise<{ domain: string; reason: string; auto: boolean }[]> {
+    try {
+      const res = await fetch(`${API_BASE}/blocked/domains`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.domains || []).map((d: any) => ({
+        domain: d.domain,
+        reason: d.reason || 'Blocked',
+        auto: d.auto || false,
+      }));
+    } catch {
+      return [];
+    }
   }
 }
 

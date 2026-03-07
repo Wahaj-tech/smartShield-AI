@@ -19,7 +19,18 @@ export type FlowCategory =
   | 'streaming'
   | 'search'
   | 'development'
+  | 'ecommerce'
+  | 'productivity'
+  | 'cloud_cdn'
+  | 'adult'
   | 'other';
+
+export type FilterMode = 'free' | 'exam' | 'parental';
+
+export interface ModeInfo {
+  mode: FilterMode;
+  blocked_categories: string[];
+}
 
 export interface CategoryStats {
   ai_tool: number;
@@ -29,6 +40,10 @@ export interface CategoryStats {
   streaming: number;
   search: number;
   development: number;
+  ecommerce: number;
+  productivity: number;
+  cloud_cdn: number;
+  adult: number;
   other: number;
 }
 
@@ -69,4 +84,6 @@ export interface WSPayload {
   ip_list: string[];
   domain_list: string[];
   app_list: string[];
+  mode?: FilterMode;
+  blocked_categories?: string[];
 }

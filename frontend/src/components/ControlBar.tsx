@@ -20,6 +20,10 @@ const CATEGORIES = [
   { value: 'streaming', label: 'Streaming' },
   { value: 'search', label: 'Search' },
   { value: 'development', label: 'Development' },
+  { value: 'ecommerce', label: 'E-Commerce' },
+  { value: 'productivity', label: 'Productivity' },
+  { value: 'cloud_cdn', label: 'Cloud / CDN' },
+  { value: 'adult', label: 'Adult' },
   { value: 'other', label: 'Other' },
 ];
 

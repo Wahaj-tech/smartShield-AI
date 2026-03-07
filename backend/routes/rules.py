@@ -2,9 +2,12 @@
 SmartShield Backend — Rule Routes
 
 POST endpoints for blocking / unblocking domains, IPs, apps, and ports.
+Domain blocking uses iptables (works without DPI engine).
+Other rules forward to the DPI engine via TCP.
 """
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 from dpi_client import DPIConnectionError
 from models.rule_models import (
@@ -15,19 +18,46 @@ from models.rule_models import (
     RuleResponse,
 )
 from services import rule_service
+from services import blocking_service
 
 router = APIRouter(tags=["Rules"])
 
 
-# ── Block endpoints ─────────────────────────────────────────────────────────
+# ── Domain block request with optional reason ──────────────────────────────
+
+class DomainBlockRequest(BaseModel):
+    domain: str
+    reason: str = Field(default="", examples=["Manually blocked"])
+
+
+# ── Domain block / unblock  (iptables-based — always works) ────────────────
 
 @router.post("/block/domain", response_model=RuleResponse)
-async def block_domain(body: DomainRule):
+async def block_domain(body: DomainBlockRequest):
+    result = blocking_service.block_domain(body.domain, body.reason)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    # Also try to tell the DPI engine (best-effort, ignore failure)
     try:
-        result = rule_service.block_domain(body.domain)
-        return RuleResponse(status=result.get("status", "ok"))
-    except DPIConnectionError as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        rule_service.block_domain(body.domain)
+    except Exception:
+        pass
+    return RuleResponse(status="ok")
+
+
+@router.post("/unblock/domain", response_model=RuleResponse)
+async def unblock_domain(body: DomainRule):
+    result = blocking_service.unblock_domain(body.domain)
+    try:
+        rule_service.unblock_domain(body.domain)
+    except Exception:
+        pass
+    return RuleResponse(status="ok")
+
+
+@router.get("/blocked/domains")
+async def get_blocked_domains():
+    return {"status": "ok", "domains": blocking_service.list_blocked()}
 
 
 @router.post("/block/ip", response_model=RuleResponse)
@@ -57,15 +87,7 @@ async def block_port(body: PortRule):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-# ── Unblock endpoints ───────────────────────────────────────────────────────
-
-@router.post("/unblock/domain", response_model=RuleResponse)
-async def unblock_domain(body: DomainRule):
-    try:
-        result = rule_service.unblock_domain(body.domain)
-        return RuleResponse(status=result.get("status", "ok"))
-    except DPIConnectionError as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+# ── Unblock endpoints (IP, app, port — DPI engine) ─────────────────────────
 
 
 @router.post("/unblock/ip", response_model=RuleResponse)
