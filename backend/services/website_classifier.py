@@ -58,7 +58,11 @@ _AI_KEYWORDS = [
     "ai", "gpt", "openai", "copilot", "claude", "perplexity",
     "midjourney", "llm", "gemini", "anthropic", "huggingface",
     "chatbot", "deepmind", "stability", "replicate", "cohere",
-    "bard", "jasper",
+    "bard", "jasper", "deepseek", "mistral", "groq", "phind",
+    "character", "inflection", "suno", "elevenlabs", "runway",
+    "leonardo", "ideogram", "codeium", "tabnine", "cursor",
+    "blackbox", "writesonic", "jenni", "smodin", "paraphras",
+    "together", "fireworks", "aitextgen",
 ]
 
 _AI_TLD = ".ai"

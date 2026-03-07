@@ -268,34 +268,6 @@ def predict(flow: FlowFeatures):
             category = lookup_cat
             confidence = "lookup"
 
-    # ── LLM fallback for truly unknown domains ────────────────────
-    # Pipeline: heuristic AI detection → LLM cache → full LLM classification
-    if confidence == "low":
-        try:
-            from services.website_classifier import classify_domain, heuristic_is_ai, lookup_cached
-            # Layer 1: Heuristic AI detection (instant, no network)
-            if heuristic_is_ai(domain):
-                category = "ai_tool"
-                confidence = "heuristic"
-            else:
-                # Layer 2: LLM cache (very fast)
-                cached = lookup_cached(domain)
-                if cached:
-                    category = cached["category"].lower()
-                    confidence = "llm_cached"
-                else:
-                    # Layer 3: Full LLM classification (rate-limited)
-                    llm_result = classify_domain(domain)
-                    if llm_result and llm_result.get("category", "OTHER") != "OTHER":
-                        category = llm_result["category"].lower()
-                        confidence = "llm"
-        except Exception as exc:
-            # Don't let LLM failures break the predict endpoint
-            import logging
-            logging.getLogger("ml_server").warning(
-                "LLM fallback failed for %s: %s", domain, exc
-            )
-
     # ── Mode-based blocking ───────────────────────────────────────
     blocked = category in MODE_BLOCKED_CATEGORIES[_current_mode]
 

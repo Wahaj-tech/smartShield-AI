@@ -51,6 +51,8 @@ $USER ALL=(ALL) NOPASSWD: /sbin/iptables
 $USER ALL=(ALL) NOPASSWD: /usr/sbin/iptables-restore
 $USER ALL=(ALL) NOPASSWD: /sbin/iptables-restore
 $USER ALL=(ALL) NOPASSWD: /usr/local/bin/smartshield-hosts
+$USER ALL=(ALL) NOPASSWD: /usr/bin/tcpdump
+$USER ALL=(ALL) NOPASSWD: /usr/sbin/tcpdump
 EOF
 
 chmod 440 "$SUDOERS_FILE"
