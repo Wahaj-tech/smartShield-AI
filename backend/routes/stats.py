@@ -7,18 +7,19 @@ GET endpoints for retrieving DPI engine statistics.
 from fastapi import APIRouter, HTTPException
 
 from dpi_client import DPIConnectionError
-from services import stats_service
+from services import stats_service, mode_service
 
 router = APIRouter(tags=["Statistics"])
 
 
 @router.get("/stats")
 async def get_stats():
-    """Return current DPI engine blocking statistics."""
+    """Return current DPI engine blocking statistics + active mode."""
     try:
         raw = stats_service.get_stats()
         stats = raw.get("stats", {})
-        return {
+
+        result = {
             "status": "ok",
             "blocked_ips": stats.get("blocked_ips", 0),
             "blocked_apps": stats.get("blocked_apps", 0),
@@ -28,6 +29,19 @@ async def get_stats():
             "domain_list": stats.get("domain_list", []),
             "app_list": stats.get("app_list", []),
         }
+
+        # Include current mode
+        try:
+            mode_info = mode_service.get_mode()
+            result["mode"] = mode_info.get("mode", "free")
+            result["blocked_categories"] = mode_info.get(
+                "blocked_categories", []
+            )
+        except Exception:
+            result["mode"] = "free"
+            result["blocked_categories"] = []
+
+        return result
     except DPIConnectionError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
