@@ -1,7 +1,0 @@
-/home/wahaj/SmartShield/dpi-engine/build/CMakeFiles/packet_analyzer.dir
-/home/wahaj/SmartShield/dpi-engine/build/CMakeFiles/dpi_live.dir
-/home/wahaj/SmartShield/dpi-engine/build/CMakeFiles/dpi_engine_bin.dir
-/home/wahaj/SmartShield/dpi-engine/build/CMakeFiles/edit_cache.dir
-/home/wahaj/SmartShield/dpi-engine/build/CMakeFiles/rebuild_cache.dir
-/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-build/CMakeFiles/edit_cache.dir
-/home/wahaj/SmartShield/dpi-engine/build/_deps/nlohmann_json-build/CMakeFiles/rebuild_cache.dir
