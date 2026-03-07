@@ -547,7 +547,7 @@ transcend-cdn.com,HTTPS,45,128.4,535.336,0.1,10.8,other
 google.com,HTTPS,83,96.8,238.800,0.3,33.7,search
 brave.com,HTTPS,12,351.2,11.161,1.1,377.7,other
 xhpingcdn.com,HTTPS,8,278.8,0.146,54.6,15226.0,other
-okxxx1.com,HTTPS,8,294.9,0.339,23.6,6965.9,other
+okxxx1.com,HTTPS,8,294.9,0.339,23.6,6965.9,adult
 fpjs.io,TCP,7,90.0,0.101,69.0,6207.4,unknown
 facebook.com,HTTPS,13,303.8,0.326,39.8,12103.8,social_media
 google.com,HTTPS,7,310.1,0.040,176.4,54709.6,search
@@ -597,7 +597,7 @@ phncdn.com,HTTPS,38,141.1,180.726,0.2,29.7,other
 whatsapp.com,HTTPS,17,270.0,65.065,0.3,70.5,messaging
 website-files.com,HTTPS,10,247.6,0.063,157.5,39001.5,other
 unpkg.com,HTTPS,8,293.9,1.059,7.6,2220.9,other
-okxxx1.com,HTTPS,27,167.4,266.415,0.1,17.0,other
+okxxx1.com,HTTPS,27,167.4,266.415,0.1,17.0,adult
 getkoala.com,HTTPS,8,298.8,1.540,5.2,1552.0,other
 profitwell.com,HTTPS,9,321.3,4.094,2.2,706.4,other
 g2.com,HTTPS,9,304.0,4.073,2.2,671.7,other
@@ -609,7 +609,7 @@ amazonaws.com,HTTPS,33,173.2,8.738,3.8,654.2,ecommerce
 vimeo.com,HTTPS,19,216.2,8.226,2.3,499.4,streaming
 amazonaws.com,HTTPS,14,242.9,5.155,2.7,659.5,ecommerce
 amazonaws.com,HTTPS,27,54.0,0.017,1568.7,84711.2,ecommerce
-okxxx1.com,HTTPS,8,333.4,0.596,13.4,4477.8,other
+okxxx1.com,HTTPS,8,333.4,0.596,13.4,4477.8,adult
 amazonaws.com,HTTPS,17,214.0,9.626,1.8,378.0,ecommerce
 amazonaws.com,HTTPS,6,154.5,1.110,5.4,835.1,ecommerce
 vimeocdn.com,HTTPS,17,183.1,1.071,15.9,2906.4,streaming
@@ -646,9 +646,9 @@ mmcdn.com,HTTPS,336,83.6,27.759,12.1,1011.9,other
 digitaloceanspaces.com,HTTPS,14,236.2,61.782,0.2,53.5,other
 privatehost.com,HTTPS,13784,70.3,302.538,45.6,3200.8,social_media
 whatsapp.com,HTTPS,27,290.8,134.329,0.2,58.5,messaging
-okxxx1.com,HTTPS,10,287.4,63.467,0.2,45.3,other
-okxxx1.com,HTTPS,10,281.0,63.464,0.2,44.3,other
-okxxx1.com,HTTPS,10,296.8,63.468,0.2,46.8,other
+okxxx1.com,HTTPS,10,287.4,63.467,0.2,45.3,adult
+okxxx1.com,HTTPS,10,281.0,63.464,0.2,44.3,adult
+okxxx1.com,HTTPS,10,296.8,63.468,0.2,46.8,adult
 intercom.io,HTTPS,23,261.1,61.612,0.4,97.5,other
 google.com,HTTPS,15,307.5,76.215,0.2,60.5,search
 vimeo.com,HTTPS,14,322.6,71.576,0.2,63.1,streaming
@@ -718,7 +718,7 @@ github.com,HTTPS,46,80.3,1096.626,0.0,3.4,development
 intercomcdn.com,HTTPS,67,106.4,241.091,0.3,29.6,other
 google.com,HTTPS,32,197.1,86.257,0.4,73.1,search
 google.com,HTTPS,26,233.6,240.686,0.1,25.2,search
-okxxx1.com,HTTPS,551,95.4,271.146,2.0,193.8,other
+okxxx1.com,HTTPS,551,95.4,271.146,2.0,193.8,adult
 intercom.io,HTTPS,26,175.6,240.520,0.1,19.0,other
 intercomcdn.com,HTTPS,49,129.2,240.607,0.2,26.3,other
 doppiocdn.org,HTTPS,62,209.2,180.810,0.3,71.7,other
@@ -755,7 +755,7 @@ google.com,HTTPS,18,316.7,91.942,0.2,62.0,search
 vimeo.com,HTTPS,20,272.6,277.836,0.1,19.6,streaming
 highwebmedia.com,HTTPS,348,98.2,580.270,0.6,58.9,other
 google.com,HTTPS,28,224.1,126.181,0.2,49.7,search
-okxxx1.com,HTTPS,303,94.0,595.734,0.5,47.8,other
+okxxx1.com,HTTPS,303,94.0,595.734,0.5,47.8,adult
 google.com,HTTPS,105,176.9,583.996,0.2,31.8,search
 mmcdn.com,HTTPS,734,126.0,590.113,1.2,156.7,other
 digitaloceanspaces.com,HTTPS,206,108.7,262.078,0.8,85.4,other
@@ -765,7 +765,7 @@ cloudfront.net,HTTPS,21,214.8,94.288,0.2,47.8,cloud_cdn
 phncdn.com,HTTPS,254,107.7,529.319,0.5,51.7,other
 g2.com,HTTPS,22,174.3,319.862,0.1,12.0,other
 jsdelivr.net,HTTPS,24,171.1,315.776,0.1,13.0,other
-okxxx1.com,HTTPS,26,183.2,306.436,0.1,15.5,other
+okxxx1.com,HTTPS,26,183.2,306.436,0.1,15.5,adult
 netflix.com,HTTPS,8,374.9,1.590,5.0,1886.3,streaming
 withgoogle.com,HTTPS,20,210.4,136.162,0.1,30.9,search
 netflix.com,HTTPS,20,474.1,158.470,0.1,59.8,streaming
@@ -882,13 +882,13 @@ facebook.com,HTTPS,13,307.3,0.753,17.3,5306.8,social_media
 ubuntu.com,HTTPS,6,84.0,0.332,18.1,1518.6,other
 github.com,HTTPS,11,235.6,30.028,0.4,86.3,development
 cdn-apple.com,HTTPS,31,170.2,325.428,0.1,16.2,productivity
-moonshot.cn,HTTPS,12,356.2,1.051,11.4,4065.8,other
-moonshot.cn,HTTPS,12,356.2,1.055,11.4,4051.2,other
-moonshot.cn,HTTPS,12,361.5,1.050,11.4,4130.5,other
-moonshot.cn,HTTPS,16,295.6,1.092,14.7,4331.9,other
-moonshot.cn,HTTPS,16,283.6,1.088,14.7,4171.9,other
-moonshot.cn,HTTPS,16,291.6,1.089,14.7,4284.4,other
-moonshot.cn,HTTPS,12,361.5,1.052,11.4,4123.9,other
+moonshot.cn,HTTPS,12,356.2,1.051,11.4,4065.8,ai_tool
+moonshot.cn,HTTPS,12,356.2,1.055,11.4,4051.2,ai_tool
+moonshot.cn,HTTPS,12,361.5,1.050,11.4,4130.5,ai_tool
+moonshot.cn,HTTPS,16,295.6,1.092,14.7,4331.9,ai_tool
+moonshot.cn,HTTPS,16,283.6,1.088,14.7,4171.9,ai_tool
+moonshot.cn,HTTPS,16,291.6,1.089,14.7,4284.4,ai_tool
+moonshot.cn,HTTPS,12,361.5,1.052,11.4,4123.9,ai_tool
 intercom.io,HTTPS,34,203.1,298.946,0.1,23.1,other
 google.com,HTTPS,21,312.5,66.518,0.3,98.7,search
 protechts.net,HTTPS,11,302.0,36.207,0.3,91.8,other
@@ -923,8 +923,8 @@ google.com,HTTPS,113,153.7,241.394,0.5,71.9,search
 azure.com,HTTPS,11,238.3,1.005,10.9,2606.9,productivity
 google.com,HTTPS,22,204.5,240.732,0.1,18.7,search
 google.com,HTTPS,42,150.7,240.452,0.2,26.3,search
-moonshot.cn,HTTPS,162,99.0,248.982,0.7,64.4,other
-moonshot.cn,HTTPS,270,108.5,249.803,1.1,117.3,other
+moonshot.cn,HTTPS,162,99.0,248.982,0.7,64.4,ai_tool
+moonshot.cn,HTTPS,270,108.5,249.803,1.1,117.3,ai_tool
 facebook.com,HTTPS,14,289.8,0.338,41.4,11987.3,social_media
 ubuntu.com,HTTPS,5,85.2,0.578,8.6,736.8,other
 perplexity.ai,HTTPS,12,333.1,10.061,1.2,397.3,ai_tool
@@ -940,7 +940,7 @@ facebook.com,HTTPS,13,302.3,0.459,28.3,8554.0,social_media
 githubcopilot.com,HTTPS,13,267.5,1.076,12.1,3232.1,ai_tool
 google.com,HTTPS,65,150.2,96.106,0.7,101.6,search
 microsoft.com,HTTPS,79,167.2,325.965,0.2,40.5,social_media
-kimi.com,HTTPS,541,100.3,362.100,1.5,149.9,other
+kimi.com,HTTPS,541,100.3,362.100,1.5,149.9,ai_tool
 google.com,HTTPS,79,135.1,743.559,0.1,14.3,search
 anthropic.com,HTTPS,660,640.7,663.258,1.0,637.5,ai_tool
 protechts.net,HTTPS,29,75.7,859.766,0.0,2.6,other
@@ -973,7 +973,7 @@ linkedin.com,HTTPS,19,355.3,92.943,0.2,72.6,social_media
 perplexity.ai,HTTPS,11,359.2,10.083,1.1,391.8,ai_tool
 bing.com,HTTPS,22,270.3,91.603,0.2,64.9,search
 microsoft.com,HTTPS,17,250.0,92.357,0.2,46.0,social_media
-grok.com,HTTPS,10,272.1,70.754,0.1,38.5,other
+grok.com,HTTPS,10,272.1,70.754,0.1,38.5,ai_tool
 facebook.com,HTTPS,13,309.3,0.458,28.4,8782.1,social_media
 google.com,HTTPS,185,418.1,93.881,2.0,823.8,search
 perplexity.ai,HTTPS,11,237.2,128.401,0.1,20.3,ai_tool
@@ -1020,7 +1020,7 @@ brave.com,HTTPS,30,227.8,245.338,0.1,27.9,other
 brave.com,HTTPS,80,132.2,383.611,0.2,27.6,other
 brave.com,HTTPS,38,257.6,248.139,0.2,39.5,other
 facebook.com,HTTPS,42,422.1,161.923,0.3,109.5,social_media
-grok.com,HTTPS,795,359.6,551.625,1.4,518.3,other
+grok.com,HTTPS,795,359.6,551.625,1.4,518.3,ai_tool
 instagram.com,HTTPS,15,332.9,65.610,0.2,76.1,social_media
 facebook.com,HTTPS,12,324.8,0.400,30.0,9735.6,social_media
 githubcopilot.com,HTTPS,15,361.6,90.690,0.2,59.8,ai_tool
@@ -1125,7 +1125,7 @@ wordtune.com,HTTPS,9,273.6,0.073,123.0,33640.6,writing_assistant
 wordtune.com,HTTPS,19,228.5,21.512,0.9,201.8,writing_assistant
 vimeo.com,HTTPS,8,291.4,15.072,0.5,154.7,streaming
 facebook.com,HTTPS,13,304.8,0.398,32.6,9950.5,social_media
-kimi.com,HTTPS,131,121.0,409.971,0.3,38.7,other
+kimi.com,HTTPS,131,121.0,409.971,0.3,38.7,ai_tool
 website-files.com,HTTPS,11,233.7,63.105,0.2,40.7,other
 google.com,HTTPS,11,272.0,63.050,0.2,47.5,search
 google.com,HTTPS,10,299.0,63.050,0.2,47.4,search

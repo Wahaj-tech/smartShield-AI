@@ -53,7 +53,7 @@ KEYWORD_GROUPS = {
                    "viber", "wechat", "line", "discord", "slack", "element",
                    "matrix", "groupme"],
     "kw_adult":   ["porn", "xxx", "xnxx", "xvideo", "xhamster", "adult",
-                   "nsfw", "redtube", "spankbang", "chaturbate", "strip",
+                   "nsfw", "redtube", "spankbang", "chaturbate", "stripchat",
                    "onlyfans", "erome", "youporn", "phncdn", "highwebmedia"],
     "kw_search":  ["search", "google.com", "bing", "duck", "yahoo", "yandex",
                    "baidu", "ecosia", "startpage"],
@@ -227,6 +227,30 @@ def predict(flow: FlowFeatures):
         confidence = "medium"
     else:
         confidence = "low"
+
+    # ── Keyword-based deterministic override ─────────────────────
+    # When a domain clearly matches a single category keyword group,
+    # override the ML prediction to ensure obvious domains aren't missed.
+    KEYWORD_TO_CATEGORY = {
+        "kw_adult":  "adult",
+        "kw_ai":     "ai_tool",
+        "kw_social": "social_media",
+        "kw_video":  "streaming",
+        "kw_chat":   "messaging",
+        "kw_shop":   "ecommerce",
+        "kw_dev":    "development",
+        "kw_write":  "writing_assistant",
+        "kw_search": "search",
+        "kw_cdn":    "cloud_cdn",
+        "kw_prod":   "productivity",
+    }
+    matched_groups = [g for g, v in kw_features.items() if v == 1 and g in KEYWORD_TO_CATEGORY]
+    if len(matched_groups) == 1:
+        # Unambiguous single keyword match — override if ML disagrees
+        kw_cat = KEYWORD_TO_CATEGORY[matched_groups[0]]
+        if category != kw_cat:
+            category = kw_cat
+            confidence = "keyword"
 
     # Domain lookup override for known domains (highest confidence)
     if domain in domain_lookup:

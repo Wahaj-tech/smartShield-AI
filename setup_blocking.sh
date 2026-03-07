@@ -10,21 +10,57 @@ if [ -z "$USER" ]; then
     exit 1
 fi
 
-echo "Setting up passwordless iptables for user: $USER"
+echo "Setting up passwordless iptables + hosts-file management for user: $USER"
+
+# Helper script that safely writes /etc/hosts while preserving non-SmartShield entries
+HOSTS_HELPER="/usr/local/bin/smartshield-hosts"
+cat > "$HOSTS_HELPER" << 'SCRIPT'
+#!/bin/bash
+# SmartShield /etc/hosts manager — called via sudo by the backend.
+# Usage:
+#   smartshield-hosts write <file>   — replace SmartShield section with contents of <file>
+#   smartshield-hosts clear          — remove SmartShield section
+BEGIN_MARKER="# >>> SmartShield blocked domains >>>"
+END_MARKER="# <<< SmartShield blocked domains <<<"
+HOSTS="/etc/hosts"
+
+case "$1" in
+  write)
+    INPUT="$2"
+    [ -f "$INPUT" ] || { echo "ERROR: input file not found"; exit 1; }
+    # Remove old SmartShield section
+    sed -i "/^${BEGIN_MARKER}$/,/^${END_MARKER}$/d" "$HOSTS"
+    # Append new section
+    echo "$BEGIN_MARKER" >> "$HOSTS"
+    cat "$INPUT"         >> "$HOSTS"
+    echo "$END_MARKER"   >> "$HOSTS"
+    ;;
+  clear)
+    sed -i "/^${BEGIN_MARKER}$/,/^${END_MARKER}$/d" "$HOSTS"
+    ;;
+  *)
+    echo "Usage: smartshield-hosts {write <file>|clear}"; exit 1;;
+esac
+SCRIPT
+chmod 755 "$HOSTS_HELPER"
 
 cat > "$SUDOERS_FILE" << EOF
-# SmartShield - Allow iptables without password for domain blocking
+# SmartShield - Allow iptables + hosts-file management without password
 $USER ALL=(ALL) NOPASSWD: /usr/sbin/iptables
 $USER ALL=(ALL) NOPASSWD: /sbin/iptables
+$USER ALL=(ALL) NOPASSWD: /usr/sbin/iptables-restore
+$USER ALL=(ALL) NOPASSWD: /sbin/iptables-restore
+$USER ALL=(ALL) NOPASSWD: /usr/local/bin/smartshield-hosts
 EOF
 
 chmod 440 "$SUDOERS_FILE"
 
 # Verify
-if sudo -n -u "$USER" true 2>/dev/null; then
+if sudo -n iptables -L -n > /dev/null 2>&1; then
     echo "SUCCESS: Passwordless iptables configured for $USER"
 else
     echo "SUCCESS: Sudoers file created at $SUDOERS_FILE"
 fi
+echo "SUCCESS: /etc/hosts helper installed at $HOSTS_HELPER"
 
 echo "You can now block domains from the SmartShield dashboard."

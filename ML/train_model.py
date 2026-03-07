@@ -36,7 +36,7 @@ KEYWORD_GROUPS = {
                    "viber", "wechat", "line", "discord", "slack", "element",
                    "matrix", "groupme"],
     "kw_adult":   ["porn", "xxx", "xnxx", "xvideo", "xhamster", "adult",
-                   "nsfw", "redtube", "spankbang", "chaturbate", "strip",
+                   "nsfw", "redtube", "spankbang", "chaturbate", "stripchat",
                    "onlyfans", "erome", "youporn", "phncdn", "highwebmedia"],
     "kw_search":  ["search", "google.com", "bing", "duck", "yahoo", "yandex",
                    "baidu", "ecosia", "startpage"],

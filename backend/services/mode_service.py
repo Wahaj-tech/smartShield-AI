@@ -19,7 +19,7 @@ from utils.logger import get_logger
 
 log = get_logger("mode_service")
 
-ML_SERVER_URL = "http://localhost:5000"
+ML_SERVER_URL = "http://localhost:8001"
 
 
 def get_mode() -> Dict[str, Any]:

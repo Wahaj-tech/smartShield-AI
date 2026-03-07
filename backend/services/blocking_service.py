@@ -32,6 +32,10 @@ log = get_logger("blocking_service")
 # Persistent storage for blocked domains
 _BLOCK_FILE = Path(__file__).resolve().parent.parent / "blocked_domains.json"
 
+# Temporary file for /etc/hosts section updates
+_HOSTS_TMP = Path("/tmp/smartshield_hosts_block.txt")
+_HOSTS_HELPER = "/usr/local/bin/smartshield-hosts"
+
 # In-memory state
 # domain → {ips: [...], reason: str, auto: bool}
 _blocked: Dict[str, Dict[str, Any]] = {}
@@ -45,8 +49,9 @@ CATEGORY_DOMAINS: Dict[str, List[str]] = {
     "ai_tool": [
         "anthropic.com", "chatgpt.com", "claude.ai", "claude.com", "cohere.ai",
         "copy.ai", "deepmind.google", "gemini.google.com", "githubcopilot.com",
-        "huggingface.co", "jasper.ai", "midjourney.com", "openai.com",
-        "perplexity.ai", "replicate.com", "stability.ai",
+        "grok.com", "huggingface.co", "jasper.ai", "kimi.com", "midjourney.com",
+        "moonshot.cn", "openai.com", "perplexity.ai", "replicate.com",
+        "stability.ai", "x.ai",
     ],
     "writing_assistant": [
         "grammarly.com", "grammarly.io", "hemingwayapp.com", "languagetool.org",
@@ -232,6 +237,54 @@ def _ensure_localhost_accept() -> None:
     )
 
 
+# ── /etc/hosts blocking ────────────────────────────────────────────────────
+
+def _sync_hosts_file() -> None:
+    """Write all currently blocked domains to /etc/hosts via the helper script.
+
+    Maps each blocked domain (and its www. variant) to 0.0.0.0 so the
+    OS-level DNS resolver returns an unreachable address.  This stops
+    browsers from connecting regardless of DNS-over-HTTPS or IP rotation.
+    """
+    domains_to_block: Set[str] = set()
+    for domain in _blocked:
+        d = domain.lower().strip()
+        domains_to_block.add(d)
+        if not d.startswith("www."):
+            domains_to_block.add("www." + d)
+
+    if not domains_to_block:
+        # Nothing to block — clear the section
+        try:
+            subprocess.run(
+                ["sudo", "-n", _HOSTS_HELPER, "clear"],
+                capture_output=True, text=True, timeout=5,
+            )
+        except Exception as exc:
+            log.warning("Failed to clear /etc/hosts section: %s", exc)
+        return
+
+    # Build hosts entries
+    lines = []
+    for d in sorted(domains_to_block):
+        lines.append(f"0.0.0.0 {d}")
+
+    try:
+        _HOSTS_TMP.write_text("\n".join(lines) + "\n")
+        result = subprocess.run(
+            ["sudo", "-n", _HOSTS_HELPER, "write", str(_HOSTS_TMP)],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            log.warning("/etc/hosts update failed: %s", result.stderr.strip())
+        else:
+            log.info("/etc/hosts updated with %d entries", len(domains_to_block))
+    except FileNotFoundError:
+        log.warning("smartshield-hosts helper not found — run: sudo bash setup_blocking.sh")
+    except Exception as exc:
+        log.warning("Failed to update /etc/hosts: %s", exc)
+
+
 def _flush_output_chain() -> bool:
     """Flush all rules in the OUTPUT chain."""
     return _run_iptables("-F", "OUTPUT")
@@ -349,6 +402,7 @@ def block_domain(domain: str, reason: str = "", auto: bool = False) -> Dict[str,
     rules_added = _add_block_rules(ips)
     _blocked[domain] = {"ips": ips, "reason": reason, "auto": auto}
     _save()
+    _sync_hosts_file()
 
     log.info("Blocked %s → %d IPs, %d rules", domain, len(ips), rules_added)
     return {
@@ -369,6 +423,7 @@ def unblock_domain(domain: str) -> Dict[str, Any]:
 
     rules_removed = _remove_block_rules(info.get("ips", []))
     _save()
+    _sync_hosts_file()
 
     log.info("Unblocked %s — %d rules removed", domain, rules_removed)
     return {"status": "ok", "domain": domain, "rules_removed": rules_removed}
@@ -451,6 +506,7 @@ def apply_mode(mode: str) -> Dict[str, Any]:
     _ensure_localhost_accept()
 
     _save()
+    _sync_hosts_file()
     elapsed = time.time() - t0
     log.info("Mode '%s': blocked %d domains (%d IPs) across %s in %.3fs",
              mode, blocked_count, len(all_ips), categories_to_block, elapsed)
@@ -467,4 +523,19 @@ def apply_mode(mode: str) -> Dict[str, Any]:
 # ── init: populate DNS cache and load persisted blocks on import ────────────
 _populate_dns_cache()
 _load()
+_sync_hosts_file()  # ensure /etc/hosts matches persisted state
+
+# On fresh startup the mode defaults to "free", so auto-blocked domains
+# left over from a previous session must be cleared immediately.
+_auto_domains = [d for d, info in _blocked.items() if info.get("auto", False)]
+if _auto_domains:
+    log.info("Startup: clearing %d auto-blocked domains (mode defaults to free)", len(_auto_domains))
+    _flush_output_chain()
+    for _d in _auto_domains:
+        _blocked.pop(_d, None)
+    # Re-apply only manual blocks
+    _reapply_all_rules()
+    _save()
+    _sync_hosts_file()
+
 _ensure_localhost_accept()  # safety net on every startup

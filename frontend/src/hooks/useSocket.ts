@@ -9,7 +9,6 @@ import type {
   AIDetection,
   TimelinePoint,
   CategoryStats,
-  ThreatAlert,
   FilterMode,
 } from '../types';
 import type { BlockedSite } from '../components/BlockedSites';
@@ -18,6 +17,11 @@ import { flowToLiveEntry } from '../components/LiveFlowStream';
 
 const FLOW_POLL_MS = 3000;
 const TIMELINE_MAX = 30; // data points kept
+
+export interface CategoryTimelinePoint {
+  time: string;
+  byCategory: Record<string, number>;
+}
 
 const EMPTY_CATEGORIES: CategoryStats = {
   ai_tool: 0,
@@ -79,28 +83,18 @@ function buildStatsFromFlows(flows: FlowRecord[]): DashboardStats {
   };
 }
 
-// Sample threat data (in production this would come from the backend)
-const SAMPLE_THREATS: ThreatAlert[] = [
-  { domain: 'malicious-site.com', reason: 'Malware detected', timestamp: new Date(Date.now() - 120000).toISOString(), severity: 'critical' },
-  { domain: 'phishing-attempt.net', reason: 'Phishing attempt', timestamp: new Date(Date.now() - 300000).toISOString(), severity: 'high' },
-  { domain: 'suspicious-tracker.io', reason: 'Tracking script blocked', timestamp: new Date(Date.now() - 480000).toISOString(), severity: 'medium' },
-  { domain: 'crypto-miner.xyz', reason: 'Crypto mining detected', timestamp: new Date(Date.now() - 600000).toISOString(), severity: 'critical' },
-  { domain: 'data-exfil.ru', reason: 'Data exfiltration attempt', timestamp: new Date(Date.now() - 900000).toISOString(), severity: 'high' },
-  { domain: 'ad-injector.com', reason: 'Ad injection blocked', timestamp: new Date(Date.now() - 1200000).toISOString(), severity: 'medium' },
-  { domain: 'keylogger-cdn.net', reason: 'Keylogger script detected', timestamp: new Date(Date.now() - 1500000).toISOString(), severity: 'critical' },
-  { domain: 'fake-update.com', reason: 'Fake software update', timestamp: new Date(Date.now() - 1800000).toISOString(), severity: 'high' },
-];
+
 
 export function useSocket() {
   const [stats, setStats] = useState<DashboardStats>({
     packets_processed: 0,
     active_connections: 0,
     flows_captured: 0,
-    blocked: SAMPLE_THREATS.length,
+    blocked: 0,
     category_stats: { ...EMPTY_CATEGORIES },
     ai_detections: [],
     timeline: [],
-    threats: SAMPLE_THREATS,
+    threats: [],
   });
 
   const [connected, setConnected] = useState(false);
@@ -111,7 +105,10 @@ export function useSocket() {
   const [blockedCategories, setBlockedCategories] = useState<string[]>([]);
   const [blockedSites, setBlockedSites] = useState<BlockedSite[]>([]);
   const [liveFlows, setLiveFlows] = useState<LiveFlow[]>([]);
+  const [allFlows, setAllFlows] = useState<FlowRecord[]>([]);
+  const [categoryTimeline, setCategoryTimeline] = useState<CategoryTimelinePoint[]>([]);
   const timelineRef = useRef<TimelinePoint[]>([]);
+  const catTimelineRef = useRef<CategoryTimelinePoint[]>([]);
   const flowsRef = useRef<FlowRecord[]>([]);
   const pausedRef = useRef(false);
 
@@ -126,36 +123,59 @@ export function useSocket() {
       const flows = await socketService.fetchFlowDataset();
       if (flows && flows.length > 0) {
         flowsRef.current = flows;
+        setAllFlows(flows);
         const newStats = buildStatsFromFlows(flows);
 
-        // Build live flow stream (latest 30 unique-domain flows)
+        // Build live flow stream — pick a random sample of flows each cycle
+        // so the stream shows different domains on each refresh, simulating
+        // real-time traffic from the static dataset.
+        const shuffled = [...flows].sort(() => Math.random() - 0.5);
         const seen = new Set<string>();
         const latest: FlowRecord[] = [];
-        for (let i = flows.length - 1; i >= 0 && latest.length < 30; i--) {
-          const key = flows[i].domain + '-' + flows[i].packet_count;
-          if (!seen.has(key)) {
-            seen.add(key);
-            latest.push(flows[i]);
+        for (let i = 0; i < shuffled.length && latest.length < 30; i++) {
+          if (!seen.has(shuffled[i].domain)) {
+            seen.add(shuffled[i].domain);
+            latest.push(shuffled[i]);
           }
         }
         setLiveFlows(latest.map((f, i) => flowToLiveEntry(f, i)));
 
-        // Add timeline point
+        // Add timeline point — sample a random window so the chart
+        // shows realistic variation instead of a flat line from the
+        // same static dataset being averaged identically each cycle.
         const now = new Date();
         const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+        const sampleSize = Math.max(30, Math.floor(flows.length * (0.3 + Math.random() * 0.5)));
+        const startIdx = Math.floor(Math.random() * Math.max(1, flows.length - sampleSize));
+        const sample = flows.slice(startIdx, startIdx + sampleSize);
+
         const avgPPS =
-          flows.length > 0
-            ? Math.round(flows.reduce((s, f) => s + f.packets_per_second, 0) / Math.max(flows.length, 1))
+          sample.length > 0
+            ? Math.round(sample.reduce((s, f) => s + f.packets_per_second, 0) / sample.length)
             : 0;
         timelineRef.current = [
           ...timelineRef.current.slice(-TIMELINE_MAX + 1),
           { time: timeStr, packets: avgPPS },
         ];
 
+        // Per-category PPS from the same sample for filtered timeline
+        const byCategory: Record<string, number> = {};
+        const catCounts: Record<string, number> = {};
+        for (const f of sample) {
+          byCategory[f.category] = (byCategory[f.category] || 0) + f.packets_per_second;
+          catCounts[f.category] = (catCounts[f.category] || 0) + 1;
+        }
+        for (const cat of Object.keys(byCategory)) {
+          byCategory[cat] = Math.round(byCategory[cat] / (catCounts[cat] || 1));
+        }
+        catTimelineRef.current = [
+          ...catTimelineRef.current.slice(-TIMELINE_MAX + 1),
+          { time: timeStr, byCategory },
+        ];
+        setCategoryTimeline([...catTimelineRef.current]);
+
         setStats((prev) => ({
           ...newStats,
-          blocked: prev.blocked,
-          threats: prev.threats,
           timeline: timelineRef.current,
         }));
       }
@@ -197,15 +217,6 @@ export function useSocket() {
       if (Array.isArray(data.blocked_categories)) {
         setBlockedCategories(data.blocked_categories as string[]);
       }
-
-      // Handle WS payload from backend (blocked stats)
-      setStats((prev) => ({
-        ...prev,
-        blocked:
-          (Number(data.blocked_domains) || 0) +
-          (Number(data.blocked_ips) || 0) ||
-          prev.blocked,
-      }));
     });
 
     // Connection status polling
@@ -292,5 +303,7 @@ export function useSocket() {
     blockSite,
     unblockSite,
     liveFlows,
+    allFlows,
+    categoryTimeline,
   };
 }
