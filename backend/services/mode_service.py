@@ -15,6 +15,7 @@ from typing import Any, Dict
 import requests
 
 from services import blocking_service
+from services import domain_enforcer
 from utils.logger import get_logger
 
 log = get_logger("mode_service")
@@ -42,13 +43,19 @@ def set_mode(mode: str) -> Dict[str, Any]:
     if ml_result.get("status") == "error":
         return ml_result
 
-    # 2) Apply iptables auto-blocking for this mode
+    # 2) Apply iptables auto-blocking for this mode (static domains)
     block_result = blocking_service.apply_mode(mode)
     log.info("Auto-blocking result: %s", block_result)
 
-    # 3) Return combined info
+    # 3) Re-evaluate dynamic (ML/LLM classified) domains for the new mode
+    dynamic_result = domain_enforcer.enforce_mode(mode)
+    log.info("Dynamic enforcement result: %s", dynamic_result)
+
+    # 4) Return combined info
     return {
         **ml_result,
         "auto_blocked": block_result.get("blocked", 0),
         "auto_unblocked": block_result.get("unblocked", 0),
+        "dynamic_blocked": dynamic_result.get("dynamic_blocked", 0),
+        "dynamic_unblocked": dynamic_result.get("dynamic_unblocked", 0),
     }

@@ -11,7 +11,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import rules, stats, domains, mode, flows
+from routes import rules, stats, domains, mode, flows, classifier
+from services.website_classifier import init_db as init_classifier_db
+from services.domain_enforcer import start_scanner, stop_scanner
 from websocket_manager import manager as ws_manager
 from utils.logger import get_logger
 
@@ -23,9 +25,12 @@ log = get_logger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("SmartShield backend starting up")
+    init_classifier_db()
     ws_manager.start_broadcast_loop()
+    start_scanner()
     yield
     log.info("SmartShield backend shutting down")
+    await stop_scanner()
     await ws_manager.stop_broadcast_loop()
 
 
@@ -55,6 +60,7 @@ app.include_router(stats.router)
 app.include_router(domains.router)
 app.include_router(mode.router)
 app.include_router(flows.router)
+app.include_router(classifier.router)
 
 
 # ── WebSocket endpoint ─────────────────────────────────────────────────────

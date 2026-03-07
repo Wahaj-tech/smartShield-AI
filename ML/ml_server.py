@@ -1,6 +1,10 @@
 import os
+import sys
 import warnings
 from enum import Enum
+
+from dotenv import load_dotenv
+load_dotenv()
 
 import joblib
 import numpy as np
@@ -10,6 +14,11 @@ from pydantic import BaseModel
 warnings.filterwarnings("ignore", category=UserWarning)
 
 ML_DIR = os.path.dirname(__file__)
+
+# Add the backend directory to sys.path so we can import the website classifier
+_BACKEND_DIR = os.path.join(os.path.dirname(ML_DIR), "backend")
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 
 model = joblib.load(os.path.join(ML_DIR, "smartshield_model.pkl"))
 domain_to_id = joblib.load(os.path.join(ML_DIR, "domain_encoder.pkl"))
@@ -258,6 +267,34 @@ def predict(flow: FlowFeatures):
         if lookup_cat != category:
             category = lookup_cat
             confidence = "lookup"
+
+    # ── LLM fallback for truly unknown domains ────────────────────
+    # Pipeline: heuristic AI detection → LLM cache → full LLM classification
+    if confidence == "low":
+        try:
+            from services.website_classifier import classify_domain, heuristic_is_ai, lookup_cached
+            # Layer 1: Heuristic AI detection (instant, no network)
+            if heuristic_is_ai(domain):
+                category = "ai_tool"
+                confidence = "heuristic"
+            else:
+                # Layer 2: LLM cache (very fast)
+                cached = lookup_cached(domain)
+                if cached:
+                    category = cached["category"].lower()
+                    confidence = "llm_cached"
+                else:
+                    # Layer 3: Full LLM classification (rate-limited)
+                    llm_result = classify_domain(domain)
+                    if llm_result and llm_result.get("category", "OTHER") != "OTHER":
+                        category = llm_result["category"].lower()
+                        confidence = "llm"
+        except Exception as exc:
+            # Don't let LLM failures break the predict endpoint
+            import logging
+            logging.getLogger("ml_server").warning(
+                "LLM fallback failed for %s: %s", domain, exc
+            )
 
     # ── Mode-based blocking ───────────────────────────────────────
     blocked = category in MODE_BLOCKED_CATEGORIES[_current_mode]

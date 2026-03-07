@@ -26,6 +26,12 @@ API_PORT: int = int(os.getenv("API_PORT", "8000"))
 WS_STATS_INTERVAL: float = float(os.getenv("WS_STATS_INTERVAL", "1.0"))  # seconds
 
 # ---------------------------------------------------------------------------
+# Gemini LLM (Unknown Domain Classifier)
+# ---------------------------------------------------------------------------
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
